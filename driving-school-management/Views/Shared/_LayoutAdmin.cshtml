@@ -13,7 +13,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <!-- LOGO TAB -->
-    <link rel="icon" type="image/png" href="~/images/logo/logo-mini.png" />
+    <link rel="icon" href="~/images/logo/logo-mini.png" />
+    <link rel="apple-touch-icon" href="~/images/logo/logo-mini.png" />
 
     <title>@ViewData["Title"] - Admin</title>
 
@@ -33,29 +34,53 @@
                 font-weight: 600;
             }
 
+            /* ===== LOGO ===== */
             .brand-link {
-                text-align: center;
-                padding: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 6px 0;
             }
 
-                .brand-link img {
-                    max-width: 140px;
-                }
+            #logoFull {
+                max-width: 140px;
+            }
 
+            #logoMini {
+                display: none;
+                max-width: 36px;
+            }
+
+            .sidebar-collapse #logoFull {
+                display: none;
+            }
+
+            .sidebar-collapse #logoMini {
+                display: inline-block;
+            }
+
+            /* ===== FIX NAVBAR + SIDEBAR ===== */
+            .layout-navbar-fixed .main-sidebar {
+                top: 57px;
+            }
+
+            /* ===== CONTENT ===== */
             .content-wrapper {
                 background: #f4f6f9;
             }
     </style>
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
     <div class="wrapper">
 
         <!-- NAVBAR -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light shadow-sm">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" data-widget="pushmenu"><i class="fa fa-bars"></i></a>
+                    <a class="nav-link" data-widget="pushmenu">
+                        <i class="fa fa-bars"></i>
+                    </a>
                 </li>
             </ul>
 
@@ -76,7 +101,8 @@
 
             <!-- LOGO -->
             <a asp-controller="AdminDashboard" asp-action="Index" class="brand-link">
-                <img src="~/images/logo/logo-full.png" alt="Logo" />
+                <img id="logoFull" src="~/images/logo/logo-full.png" />
+                <img id="logoMini" src="~/images/logo/logo-mini.png" />
             </a>
 
             <div class="sidebar">
@@ -126,6 +152,7 @@
 
                     </ul>
                 </nav>
+
             </div>
         </aside>
 
@@ -155,10 +182,12 @@
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
     <link href="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/toastr@2.1.4/build/toastr.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @RenderSection("Scripts", required: false)
     @await Html.PartialAsync("_Toast")
 
