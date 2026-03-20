@@ -69,6 +69,29 @@ BEGIN
 END;
 /
 
+-- kiểm tra đã có những thông tin cần thiết trước khi đăng nhập vào
+CREATE OR REPLACE FUNCTION FUNC_CHECK_USER_PROFILE
+(
+    p_userId IN NUMBER
+)
+RETURN NUMBER
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM HOCVIEN
+    WHERE USERID = p_userId
+      AND EMAIL IS NOT NULL
+      AND SDT IS NOT NULL
+      AND SOCMNDCCCD IS NOT NULL;
+
+    IF v_count = 0 THEN
+        RETURN 0; -- chưa đủ
+    END IF;
+
+    RETURN 1; -- đầy đủ
+END;
+/
 -- ============================================================
 -- ====================        ADMIN        ====================
 -- ============================================================
@@ -109,7 +132,6 @@ BEGIN
 
 END;
 /
-
 
 
 
