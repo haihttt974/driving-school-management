@@ -16,8 +16,8 @@ builder.Services.AddScoped<AdminExamService>();
 builder.Services.AddScoped<KhoaHocService>();
 builder.Services.AddScoped<HocService>();
 builder.Services.AddScoped<LyThuyetService>();
+builder.Services.AddScoped<AdminUserService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
-
 //
 builder.Services.AddSession();
 builder.Services.AddHttpContextAccessor();

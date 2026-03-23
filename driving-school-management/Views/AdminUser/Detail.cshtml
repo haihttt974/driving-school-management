@@ -1,0 +1,288 @@
+﻿@model dynamic
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Chi tiết người dùng";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #f3f6fb;
+    }
+
+    .page-wrap {
+        padding: 20px 16px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .detail-card {
+        width: 100%;
+        max-width: 680px;
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        padding: 22px 24px;
+    }
+
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .detail-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .detail-subtitle {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-custom {
+        border: none;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-edit {
+        background: #2563eb;
+        color: #fff;
+    }
+
+        .btn-edit:hover {
+            background: #1d4ed8;
+            color: #fff;
+            text-decoration: none;
+        }
+
+    .btn-back {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+        .btn-back:hover {
+            background: #cbd5e1;
+            color: #0f172a;
+            text-decoration: none;
+        }
+
+    .section-block {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px solid #eef2f7;
+    }
+
+        .section-block:first-of-type {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+    .section-title {
+        margin: 0 0 14px 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 14px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .form-control-view {
+        min-height: 42px;
+        border-radius: 10px;
+        border: 1px solid #dbe2ea;
+        background: #f8fafc;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        word-break: break-word;
+    }
+
+    .status-wrap {
+        display: flex;
+        align-items: center;
+        min-height: 42px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-inactive {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .footer-actions {
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid #eef2f7;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    @@media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .header-actions,
+        .footer-actions {
+            width: 100%;
+        }
+
+            .header-actions .btn-custom,
+            .footer-actions .btn-custom {
+                flex: 1;
+                justify-content: center;
+            }
+    }
+</style>
+
+<div class="page-wrap">
+    <div class="detail-card">
+        <div class="detail-header">
+            <div>
+                <h2 class="detail-title">Chi tiết người dùng</h2>
+                <div class="detail-subtitle">Xem thông tin tài khoản và hồ sơ người dùng</div>
+            </div>
+
+            <div class="header-actions">
+                <a asp-controller="AdminUser"
+                       asp-action="Index"
+                       class="btn-custom btn-back">
+                    <i class="fa fa-arrow-left"></i>
+                    Quay lại
+                </a>
+
+                <a asp-controller="AdminUser"
+                       asp-action="Edit"
+                       asp-route-id="@Model.userId"
+                       class="btn-custom btn-edit">
+                    <i class="fas fa-edit"></i>
+                    Sửa
+                </a>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h3 class="section-title">Thông tin User</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">ID</label>
+                    <div class="form-control-view">@Model.userId</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <div class="form-control-view">@Model.userName</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+                    <div class="form-control-view">@(Model.roleName ?? "Không có")</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Trạng thái</label>
+                    <div class="status-wrap">
+                        @if (Convert.ToInt32(Model.isActive) == 1)
+                        {
+                            <span class="status-badge status-active">Active</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-inactive">Inactive</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-block">
+            <h3 class="section-title">Thông tin học viên</h3>
+
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label class="form-label">Họ tên</label>
+                    <div class="form-control-view">@(Model.hoTen ?? "Chưa có")</div>
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Email</label>
+                    <div class="form-control-view">@(Model.email ?? "Chưa có")</div>
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">SĐT</label>
+                    <div class="form-control-view">@(Model.sdt ?? "Chưa có")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

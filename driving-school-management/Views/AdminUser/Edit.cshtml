@@ -1,0 +1,428 @@
+﻿@model driving_school_management.ViewModels.UserUpdateVM
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+@{
+    var success = TempData["Success"] as string;
+    var error = TempData["Error"] as string;
+    var info = TempData["Info"] as string;
+    var warning = TempData["Warning"] as string;
+    var errors = TempData["Errors"] as List<string>;
+
+    var currentUserName = User?.Identity?.Name ?? "";
+    var isCurrentLoginUser = string.Equals(currentUserName, Model.UserName, StringComparison.OrdinalIgnoreCase);
+}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        background: #f3f6fb;
+    }
+
+    .page-wrap {
+        width: 100%;
+        min-height: calc(100vh - 80px);
+        padding: 20px 16px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .edit-card {
+        width: 100%;
+        max-width: 680px;
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        padding: 22px 24px;
+    }
+
+    .edit-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .edit-title {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .edit-subtitle {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn {
+        border: none;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-back {
+        background: #e2e8f0;
+    }
+
+    .btn-save {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .btn-role {
+        background: #16a34a;
+        color: #fff;
+    }
+
+    .btn-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px 14px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+    .form-label {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .form-control {
+        height: 42px;
+        border-radius: 10px;
+        border: 1px solid #dbe2ea;
+        padding: 0 12px;
+        font-size: 14px;
+    }
+
+        .form-control:focus {
+            border-color: #2563eb;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        .form-control[disabled] {
+            background: #f8fafc;
+            cursor: not-allowed;
+            color: #64748b;
+        }
+
+    .role-section {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .role-note {
+        font-size: 13px;
+        color: #dc2626;
+    }
+
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.3);
+        z-index: 9999;
+    }
+
+    .modal-box {
+        width: 100%;
+        max-width: 340px;
+        margin: 100px auto;
+        background: white;
+        border-radius: 14px;
+        padding: 18px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .modal-actions {
+        margin-top: 14px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    @@media (max-width: 768px) {
+        .page-wrap {
+            min-height: auto;
+            align-items: flex-start;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+            .header-actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+    }
+</style>
+
+<div class="page-wrap">
+    <form method="post" action="/AdminUser/Edit" id="editForm" class="form-container">
+        <input type="hidden" name="UserId" value="@Model.UserId" />
+
+        <div class="edit-card">
+            <div class="edit-header">
+                <div>
+                    <h2 class="edit-title">Cập nhật User</h2>
+                    <div class="edit-subtitle">Chỉnh sửa thông tin tài khoản</div>
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" onclick="goBack()" class="btn btn-back">
+                        <i class="fa fa-arrow-left"></i> Quay lại
+                    </button>
+
+                    <button type="submit" class="btn btn-save">
+                        <i class="fa fa-save"></i> Lưu
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label class="form-label">UserName</label>
+                    <input class="form-control" name="UserName" value="@Model.UserName" />
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Họ tên</label>
+                    <input class="form-control" name="HoTen" value="@Model.HoTen" />
+                </div>
+
+                <div class="form-group full">
+                    <label class="form-label">Email</label>
+                    <input class="form-control" name="Email" value="@Model.Email" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">SĐT</label>
+                    <input class="form-control" name="Sdt" value="@Model.Sdt" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Trạng thái</label>
+                    <select class="form-control" name="IsActive" @(isCurrentLoginUser ? "disabled" : "")>
+                        @if (Model.IsActive == 1)
+                        {
+                            <option value="1" selected>Active</option>
+                            <option value="0">Inactive</option>
+                        }
+                        else
+                        {
+                            <option value="1">Active</option>
+                            <option value="0" selected>Inactive</option>
+                        }
+                    </select>
+
+                    @if (isCurrentLoginUser)
+                    {
+                        <input type="hidden" name="IsActive" value="@Model.IsActive" />
+                    }
+                </div>
+            </div>
+
+            <div class="role-section">
+                @if (!isCurrentLoginUser)
+                {
+                    <button type="button" class="btn btn-role" onclick="openRoleModal()">
+                        <i class="fa fa-user-shield"></i> Đổi Role
+                    </button>
+                }
+                else
+                {
+                    <span class="role-note">Tài khoản đang đăng nhập không được đổi trạng thái hoặc role</span>
+                }
+            </div>
+        </div>
+    </form>
+</div>
+
+<div id="roleModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-title">Xác nhận Admin</div>
+
+        <input type="password" id="adminPass" class="form-control" placeholder="Mật khẩu admin" />
+
+        <select id="newRole" class="form-control" style="margin-top:10px;">
+            <option value="1">Admin</option>
+            <option value="2">User</option>
+        </select>
+
+        <div class="modal-actions">
+            <button type="button" onclick="closeModal()" class="btn btn-back">Hủy</button>
+            <button type="button" onclick="submitRole()" class="btn btn-save">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: "4000"
+        };
+
+        @if (!string.IsNullOrEmpty(success))
+        {
+                <text>toastr.success("@success");</text>
+        }
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+                <text>toastr.error("@error");</text>
+        }
+
+        @if (errors != null)
+        {
+                foreach (var err in errors)
+                {
+                        <text>toastr.error("@err");</text>
+                }
+        }
+
+        @if (!string.IsNullOrEmpty(info))
+        {
+                <text>toastr.info("@info");</text>
+        }
+
+        @if (!string.IsNullOrEmpty(warning))
+        {
+                <text>toastr.warning("@warning");</text>
+        }
+
+        let isChanged = false;
+        const isCurrentLoginUser = @isCurrentLoginUser.ToString().ToLower();
+
+        document.querySelectorAll("#editForm input, #editForm select").forEach(el => {
+            el.addEventListener("change", () => {
+                isChanged = true;
+            });
+        });
+
+        window.goBack = function () {
+            if (isChanged) {
+                if (confirm("Bạn có chắc muốn thoát?")) {
+                    window.location.href = "/AdminUser/Index";
+                }
+            } else {
+                window.location.href = "/AdminUser/Index";
+            }
+        };
+
+        document.getElementById("editForm").addEventListener("submit", function (e) {
+            if (isCurrentLoginUser) {
+                const statusSelect = document.querySelector('select[name="IsActive"]');
+                if (statusSelect) {
+                    statusSelect.disabled = true;
+                }
+            }
+
+            if (!confirm("Lưu thay đổi?")) {
+                e.preventDefault();
+            }
+        });
+
+        window.openRoleModal = function () {
+            if (isCurrentLoginUser) {
+                toastr.warning("Tài khoản đang đăng nhập không được đổi role");
+                return;
+            }
+
+            document.getElementById("roleModal").style.display = "block";
+        };
+
+        window.closeModal = function () {
+            document.getElementById("roleModal").style.display = "none";
+        };
+
+        window.submitRole = function () {
+            if (isCurrentLoginUser) {
+                toastr.warning("Tài khoản đang đăng nhập không được đổi role");
+                return;
+            }
+
+            let password = document.getElementById("adminPass").value;
+            let roleId = parseInt(document.getElementById("newRole").value);
+
+            fetch("/AdminUser/UpdateRole", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    UserId: @Model.UserId,
+                    RoleId: roleId,
+                    AdminPassword: password
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    toastr.success("Thành công");
+                    setTimeout(() => {
+                        location.reload();
+                    }, 800);
+                } else {
+                    toastr.error(data.message || "Thất bại");
+                }
+            })
+            .catch(() => {
+                toastr.error("Có lỗi xảy ra");
+            });
+        };
+    });
+</script>
