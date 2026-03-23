@@ -93,7 +93,7 @@ BEGIN
 END;
 /
 -- ============================================================
--- ====================        ADMIN        ====================
+-- ====================        ADMIN        ===================
 -- ============================================================
 -- DASHBOARD
 CREATE OR REPLACE PROCEDURE PROC_ADMIN_DASHBOARD
@@ -150,8 +150,8 @@ GROUP BY
 /
 CREATE OR REPLACE PROCEDURE SP_CREATE_KYTHI
 (
-    p_tenKyThi NVARCHAR2,
-    p_loaiKyThi NVARCHAR2
+    p_tenKyThi   KyThi.tenKyThi%TYPE,
+    p_loaiKyThi  KyThi.loaiKyThi%TYPE
 )
 AS
 BEGIN
@@ -159,6 +159,7 @@ BEGIN
     VALUES (p_tenKyThi, p_loaiKyThi);
 END;
 /
+
 CREATE OR REPLACE PROCEDURE SP_UPDATE_KYTHI
 (
     p_kyThiId NUMBER,
@@ -224,7 +225,111 @@ END;
 
 
 
+-- ============================================================
+-- ====================        USER        ====================
+-- ============================================================
+CREATE OR REPLACE PROCEDURE SP_HOME_DASHBOARD (
+    p_user_id              IN NUMBER,
+    p_total_courses        OUT NUMBER,
+    p_total_exams          OUT NUMBER,
+    p_total_licenses       OUT NUMBER,
+    p_featured_courses     OUT SYS_REFCURSOR,
+    p_my_profiles          OUT SYS_REFCURSOR,
+    p_my_exam_results      OUT SYS_REFCURSOR
+)
+AS
+BEGIN
+    /* ================= TỔNG QUAN CHUNG ================= */
 
+    SELECT COUNT(*)
+    INTO p_total_courses
+    FROM KhoaHoc;
 
+    SELECT COUNT(*)
+    INTO p_total_exams
+    FROM KyThi;
+
+    SELECT COUNT(*)
+    INTO p_total_licenses
+    FROM GiayPhepLaiXe;
+
+    /* ================= KHÓA HỌC NỔI BẬT ================= */
+
+    OPEN p_featured_courses FOR
+        SELECT
+            kh.khoaHocId,
+            kh.tenKhoaHoc,
+            hg.tenHang,
+            kh.ngayBatDau,
+            kh.ngayKetThuc,
+            kh.diaDiem,
+            kh.trangThai,
+            hg.hocPhi
+        FROM KhoaHoc kh
+        JOIN HangGplx hg ON hg.hangId = kh.hangId
+        ORDER BY kh.ngayBatDau DESC
+        FETCH FIRST 6 ROWS ONLY;
+
+    /* ================= NẾU CHƯA ĐĂNG NHẬP ================= */
+
+    IF p_user_id IS NULL OR p_user_id = 0 THEN
+
+        OPEN p_my_profiles FOR
+            SELECT
+                CAST(NULL AS NUMBER) AS hoSoId,
+                CAST(NULL AS NVARCHAR2(100)) AS tenHoSo,
+                CAST(NULL AS NVARCHAR2(20)) AS tenHang,
+                CAST(NULL AS DATE) AS ngayDangKy,
+                CAST(NULL AS NVARCHAR2(50)) AS trangThai
+            FROM dual
+            WHERE 1 = 0;
+
+        OPEN p_my_exam_results FOR
+            SELECT
+                CAST(NULL AS NVARCHAR2(100)) AS tenBaiThi,
+                CAST(NULL AS NVARCHAR2(50)) AS ketQuaDatDuoc,
+                CAST(NULL AS BINARY_FLOAT) AS tongDiem,
+                CAST(NULL AS NVARCHAR2(100)) AS tenKyThi
+            FROM dual
+            WHERE 1 = 0;
+
+    ELSE
+
+        /* ================= HỒ SƠ CỦA USER ================= */
+
+        OPEN p_my_profiles FOR
+            SELECT
+                hs.hoSoId,
+                hs.tenHoSo,
+                hg.tenHang,
+                hs.ngayDangKy,
+                hs.trangThai
+            FROM HocVien hv
+            JOIN HoSoThiSinh hs ON hs.hocVienId = hv.hocVienId
+            JOIN HangGplx hg ON hg.hangId = hs.hangId
+            WHERE hv.userId = p_user_id
+            ORDER BY hs.ngayDangKy DESC;
+
+        /* ================= KẾT QUẢ THI CỦA USER ================= */
+
+        OPEN p_my_exam_results FOR
+            SELECT
+                bt.tenBaiThi,
+                ct.ketQuaDatDuoc,
+                ct.tongDiem,
+                kt.tenKyThi
+            FROM HocVien hv
+            JOIN HoSoThiSinh hs ON hs.hocVienId = hv.hocVienId
+            JOIN ChiTietKetQuaThi ct ON ct.hoSoId = hs.hoSoId
+            JOIN BaiThi bt ON bt.baiThiId = ct.baiThiId
+            JOIN KyThi kt ON kt.kyThiId = bt.kyThiId
+            WHERE hv.userId = p_user_id
+            ORDER BY bt.baiThiId DESC
+            FETCH FIRST 5 ROWS ONLY;
+
+    END IF;
+
+END;
+/
 
 COMMIT;
