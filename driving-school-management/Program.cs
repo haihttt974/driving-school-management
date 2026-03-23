@@ -13,6 +13,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<AdminExamService>();
+builder.Services.AddScoped<KhoaHocService>();
+builder.Services.AddScoped<IHomeService, HomeService>();
 
 //
 builder.Services.AddSession();
