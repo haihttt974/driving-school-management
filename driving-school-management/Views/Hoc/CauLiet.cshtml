@@ -230,7 +230,7 @@
     let currentIndex = 0;
 
     function showQuestion(index) {
-        const q = allQuestions.find(x => x.GlobalIndex === index);
+        const q = allQuestions[index];
         if (!q) return;
 
         currentIndex = index;
@@ -261,17 +261,19 @@
         document.getElementById("answerList").innerHTML = html;
 
         document.querySelectorAll(".q-btn").forEach(b => b.classList.remove("active"));
-        document.querySelector(`.q-btn[data-q-index="${index}"]`)?.classList.add("active");
+        document.querySelector(`.q-btn[data-q-index="${q.GlobalIndex}"]`)?.classList.add("active");
     }
 
     document.querySelectorAll(".q-btn").forEach(btn => {
-        btn.addEventListener("click", () =>
-            showQuestion(parseInt(btn.dataset.qIndex))
-        );
+            btn.addEventListener("click", () => {
+            const global = parseInt(btn.dataset.qIndex);
+            const idx = allQuestions.findIndex(x => x.GlobalIndex === global);
+            if (idx !== -1) showQuestion(idx);
+        });
     });
 
     document.getElementById("btnPrev").onclick = () => {
-        if (currentIndex > 1) showQuestion(currentIndex - 1);
+        if (currentIndex > 0) showQuestion(currentIndex - 1);
     };
 
     document.getElementById("btnNext").onclick = () => {
@@ -279,7 +281,7 @@
     };
 
     document.getElementById("btnHint").onclick = () => {
-        const q = allQuestions.find(x => x.GlobalIndex === currentIndex);
+        const q = allQuestions[currentIndex];
         if (!q || !q.UrlAnhMeo) {
             alert("Không có mẹo cho câu này!");
             return;

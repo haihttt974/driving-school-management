@@ -39,7 +39,11 @@ namespace driving_school_management.Controllers
 
             if (history && userId.HasValue)
             {
-                var examDt = _service.GetExam(idBoDe);
+                var selectedHang = HttpContext.Session.GetString("Hang");
+                if (string.IsNullOrWhiteSpace(selectedHang))
+                    return RedirectToAction("Index", "Hoc");
+
+                var examDt = _service.GetExam(idBoDe, selectedHang);
                 var historyDt = _service.GetHistory(userId.Value, idBoDe);
 
                 if (examDt.Rows.Count > 0 && historyDt.Rows.Count > 0)
@@ -164,7 +168,8 @@ namespace driving_school_management.Controllers
             HttpContext.Session.SetString("RandomExamCauHoi", string.Join(",", listIds));
 
             var vm = BuildRandomExamViewModel(dt, hang);
-            vm.ThoiGian = HttpContext.Session.GetInt32("RandomExamTime") ?? vm.ThoiGian;
+
+            vm.ThoiGian = HttpContext.Session.GetInt32("RandomExamTime") ?? (vm.ThoiGian / 60);
             vm.IsRandomExam = true;
 
             return View("Exam", vm);
@@ -299,18 +304,11 @@ namespace driving_school_management.Controllers
             if (string.IsNullOrWhiteSpace(selectedHang))
                 return null;
 
-            var dt = _service.GetExam(idBoDe);
+            var dt = _service.GetExam(idBoDe, selectedHang);
             if (dt.Rows.Count == 0)
                 return null;
 
-            var vm = BuildExamViewModelFromTable(dt, true);
-            if (vm == null)
-                return null;
-
-            if (!string.Equals(vm.Hang?.Trim(), selectedHang.Trim(), StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            return vm;
+            return BuildExamViewModelFromTable(dt, true);
         }
 
         private ExamViewModel BuildRandomExamViewModel(DataTable dt, string hang)
@@ -333,7 +331,7 @@ namespace driving_school_management.Controllers
             if (string.IsNullOrWhiteSpace(raw) || string.IsNullOrWhiteSpace(hang))
                 return null;
 
-            var dt = _service.GetRandomExam(hang);
+            var dt = _service.GetRandomExamByIds(hang, raw);
             if (dt.Rows.Count == 0)
                 return null;
 
@@ -342,7 +340,6 @@ namespace driving_school_management.Controllers
                          .ToList();
 
             var filteredRows = dt.AsEnumerable()
-                                 .Where(r => ids.Contains(Convert.ToInt32(r["CAUHOIID"])))
                                  .OrderBy(r => ids.IndexOf(Convert.ToInt32(r["CAUHOIID"])))
                                  .ThenBy(r => Convert.ToInt32(r["THUTU"]))
                                  .ToList();
@@ -353,7 +350,7 @@ namespace driving_school_management.Controllers
             var rows = filteredRows.CopyToDataTable();
 
             var vm = BuildRandomExamViewModel(rows, hang);
-            vm.ThoiGian = HttpContext.Session.GetInt32("RandomExamTime") ?? vm.ThoiGian;
+            vm.ThoiGian = HttpContext.Session.GetInt32("RandomExamTime") ?? (vm.ThoiGian / 60);
             vm.IsRandomExam = true;
 
             return vm;

@@ -31,7 +31,7 @@ namespace driving_school_management.Services
             return dt;
         }
 
-        public DataTable GetExam(int boDeId)
+        public DataTable GetExam(int boDeId, string maHang)
         {
             var dt = new DataTable();
 
@@ -40,6 +40,7 @@ namespace driving_school_management.Services
             cmd.CommandType = CommandType.StoredProcedure;
 
             cmd.Parameters.Add("P_BODEID", OracleDbType.Int32).Value = boDeId;
+            cmd.Parameters.Add("P_MAHANG", OracleDbType.Varchar2).Value = maHang;
             cmd.Parameters.Add("P_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             conn.Open();
@@ -178,6 +179,25 @@ namespace driving_school_management.Services
 
             conn.Open();
             cmd.ExecuteNonQuery();
+        }
+
+        public DataTable GetRandomExamByIds(string maHang, string ids)
+        {
+            var dt = new DataTable();
+
+            using var conn = new OracleConnection(_conn);
+            using var cmd = new OracleCommand("PR_GET_RANDOM_EXAM_BY_IDS", conn);
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.Add("P_MAHANG", OracleDbType.Varchar2).Value = maHang;
+            cmd.Parameters.Add("P_IDS", OracleDbType.Varchar2).Value = ids;
+            cmd.Parameters.Add("P_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
+
+            conn.Open();
+            using var da = new OracleDataAdapter(cmd);
+            da.Fill(dt);
+
+            return dt;
         }
     }
 }

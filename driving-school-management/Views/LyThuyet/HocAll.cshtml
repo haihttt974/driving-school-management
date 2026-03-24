@@ -189,7 +189,7 @@
         }
 
         function showQuestion(index) {
-            const q = allQuestions.find(x => x.GlobalIndex === index);
+            const q = allQuestions[index];
             if (!q) return;
 
             currentIndex = index;
@@ -225,13 +225,15 @@
             document.getElementById("answerList").innerHTML = html;
 
             document.querySelectorAll(".q-btn").forEach(b => b.classList.remove("active"));
-            const activeBtn = document.querySelector(`.q-btn[data-q-index="${index}"]`);
+            const activeBtn = document.querySelector(`.q-btn[data-q-index="${q.GlobalIndex}"]`);
             if (activeBtn) activeBtn.classList.add("active");
         }
 
         document.querySelectorAll(".q-btn").forEach(btn => {
             btn.addEventListener("click", function () {
-                showQuestion(parseInt(this.dataset.qIndex));
+                const global = parseInt(this.dataset.qIndex);
+                const idx = allQuestions.findIndex(x => x.GlobalIndex === global);
+                if (idx !== -1) showQuestion(idx);
             });
         });
 
@@ -248,7 +250,7 @@
         });
 
         document.getElementById("btnHint").addEventListener("click", function () {
-            const q = allQuestions.find(x => x.GlobalIndex === currentIndex);
+            const q = allQuestions[currentIndex];
             if (!q || !q.UrlAnhMeo) {
                 alert("Không có mẹo cho câu này!");
                 return;
