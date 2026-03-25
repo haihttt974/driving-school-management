@@ -37,7 +37,10 @@ namespace driving_school_management.Services
             if (cmd.Parameters["o_userId"].Value == DBNull.Value)
                 return null;
 
-            var dbPassword = cmd.Parameters["o_password"].Value.ToString();
+            var dbPassword = cmd.Parameters["o_password"].Value?.ToString();
+
+            if (string.IsNullOrEmpty(dbPassword))
+                return null;
 
             if (!BCrypt.Net.BCrypt.Verify(password, dbPassword))
                 return null;
@@ -52,23 +55,29 @@ namespace driving_school_management.Services
         }
 
         // ================= REGISTER =================
-        public async Task<int> Register(string username, string password)
+        public int Register(string username, string password, string email, int roleId)
         {
-            using var conn = new OracleConnection(_connectionString);
-            using var cmd = new OracleCommand("PROC_REGISTER", conn);
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
 
-            cmd.CommandType = CommandType.StoredProcedure;
+            using (var conn = new OracleConnection(_connectionString))
+            {
+                using (var cmd = new OracleCommand("PROC_REGISTER", conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
 
-            cmd.Parameters.Add("p_username", OracleDbType.NVarchar2).Value = username;
-            cmd.Parameters.Add("p_password", OracleDbType.NVarchar2).Value = BCrypt.Net.BCrypt.HashPassword(password);
-            cmd.Parameters.Add("p_roleId", OracleDbType.Int32).Value = 2;
+                    cmd.Parameters.Add("p_username", OracleDbType.NVarchar2).Value = username;
+                    cmd.Parameters.Add("p_password", OracleDbType.NVarchar2).Value = hashedPassword;
+                    cmd.Parameters.Add("p_email", OracleDbType.NVarchar2).Value = email;
+                    cmd.Parameters.Add("p_roleId", OracleDbType.Int32).Value = roleId;
 
-            cmd.Parameters.Add("o_result", OracleDbType.Int32).Direction = ParameterDirection.Output;
+                    cmd.Parameters.Add("o_result", OracleDbType.Int32).Direction = ParameterDirection.Output;
 
-            await conn.OpenAsync();
-            await cmd.ExecuteNonQueryAsync();
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
 
-            return Convert.ToInt32(cmd.Parameters["o_result"].Value);
+                    return Convert.ToInt32(cmd.Parameters["o_result"].Value.ToString());
+                }
+            }
         }
 
         // ================= RESET PASSWORD =================

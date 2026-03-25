@@ -62,26 +62,23 @@ namespace driving_school_management.Controllers
         public IActionResult Register() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Register(string username, string password)
+        public IActionResult Register(string username, string password, string email)
         {
-            var result = await _authService.Register(username, password);
+            int roleId = 2; // mặc định user thường
 
-            if (result == -1)
+            int result = _authService.Register(username, password, email, roleId);
+
+            if (result == 1)
+            {// Auto login
+                HttpContext.Session.SetString("Username", username);
+                TempData["Success"] = "Đăng ký thành công";
+                return RedirectToAction("Index", "Home");
+            }
+            else
             {
                 TempData["Error"] = "Username đã tồn tại";
                 return RedirectToAction("Register");
             }
-
-            // AUTO LOGIN SAU REGISTER
-            var login = await _authService.Login(username, password);
-
-            HttpContext.Session.SetInt32("UserId", login.UserId);
-            HttpContext.Session.SetString("Username", login.Username);
-            HttpContext.Session.SetInt32("RoleId", login.RoleId);
-
-            TempData["Success"] = "Đăng ký thành công, vui lòng cập nhật thông tin";
-
-            return RedirectToAction("Edit", "User");
         }
 
         // ================= RESET PASSWORD =================
