@@ -160,7 +160,7 @@ namespace driving_school_management.Controllers
                 return RedirectToAction("Index", "KhoaHoc");
             }
 
-            return RedirectToAction("Index", "ThanhToan", new
+            return RedirectToAction("StartPayment", "Payment", new
             {
                 khoaHocId = model.KhoaHocId,
                 hoSoId = model.HoSoIdPhuHop

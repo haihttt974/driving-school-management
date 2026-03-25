@@ -1,0 +1,260 @@
+﻿@model driving_school_management.Models.DTOs.PaymentStartDto
+
+@{
+    ViewData["Title"] = "Bắt đầu thanh toán";
+}
+
+<style>
+    body {
+        background: #f3f5f9;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .payment-wrap {
+        max-width: 950px;
+        margin: 40px auto;
+        padding: 24px;
+    }
+
+    .payment-card {
+        background: #fff;
+        border-radius: 22px;
+        padding: 32px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.06);
+    }
+
+    .payment-title {
+        font-size: 30px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 4px;
+    }
+
+    .payment-sub {
+        color: #6b7280;
+        margin-bottom: 28px;
+    }
+
+    .grid-info {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+        margin-bottom: 24px;
+    }
+
+    .info-box {
+        background: #fafafa;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 18px;
+    }
+
+        .info-box.highlight {
+            background: #111827;
+            color: #fff;
+            border: none;
+        }
+
+    .label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+
+    .highlight .label {
+        color: #d1d5db;
+    }
+
+    .value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .highlight .value {
+        color: #fff;
+        font-size: 20px;
+    }
+
+    .field-block {
+        margin-top: 22px;
+    }
+
+        .field-block label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .field-block input[type="text"] {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-size: 15px;
+        }
+
+    .method-group {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 14px;
+    }
+
+    .method-option {
+        position: relative;
+    }
+
+        .method-option input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .method-option label {
+            display: block;
+            text-align: center;
+            padding: 18px;
+            border: 1px solid #d1d5db;
+            border-radius: 16px;
+            background: #fff;
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+
+        .method-option img {
+            height: 36px;
+            margin-bottom: 8px;
+        }
+
+        .method-option span {
+            display: block;
+            font-weight: 600;
+        }
+
+        .method-option input:checked + label {
+            border-color: #111827;
+            background: #111827;
+            color: #fff;
+        }
+
+            .method-option input:checked + label img {
+                filter: brightness(0) invert(1);
+            }
+
+    .action-row {
+        margin-top: 28px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-submit {
+        border: none;
+        background: #111827;
+        color: #fff;
+        padding: 14px 26px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 15px;
+        cursor: pointer;
+    }
+
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+
+    @@media (max-width: 768px) {
+        .grid-info {
+            grid-template-columns: 1fr;
+        }
+
+        .method-group {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="payment-wrap">
+    <div class="payment-card">
+        <div class="payment-title">Xác nhận thanh toán</div>
+        <div class="payment-sub">Kiểm tra lại thông tin và chọn phương thức thanh toán</div>
+
+        <div class="grid-info">
+            <div class="info-box highlight">
+                <div class="label">Khóa học</div>
+                <div class="value">@Model.TenKhoaHoc</div>
+            </div>
+
+            <div class="info-box highlight">
+                <div class="label">Số tiền</div>
+                <div class="value">@Model.SoTien.ToString("N0") VNĐ</div>
+            </div>
+
+            <div class="info-box">
+                <div class="label">Hạng</div>
+                <div class="value">@Model.TenHang</div>
+            </div>
+
+            <div class="info-box">
+                <div class="label">Học viên</div>
+                <div class="value">@Model.HoTenHocVien</div>
+            </div>
+
+            <div class="info-box">
+                <div class="label">Ngày lập phiếu</div>
+                <div class="value">@(Model.NgayLap?.ToString("dd/MM/yyyy") ?? "")</div>
+            </div>
+
+            <div class="info-box">
+                <div class="label">Mã phiếu</div>
+                <div class="value">@Model.PhieuId</div>
+            </div>
+        </div>
+
+        <form asp-action="ChoosePaymentMethod" asp-controller="Payment" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="phieuId" value="@Model.PhieuId" />
+
+            <div class="field-block">
+                <label for="noiDung">Nội dung chuyển khoản</label>
+                <input type="text" id="noiDung" name="noiDung" value="@Model.NoiDungMacDinh" />
+            </div>
+
+            <div class="field-block">
+                <label>Chọn phương thức thanh toán</label>
+                <div class="method-group">
+
+                    <div class="method-option">
+                        <input type="radio" id="vnpay" name="method" value="VNPAY" checked />
+                        <label for="vnpay">
+                            <img src="~/images/logo/vnpay-logo.png" />
+                            <span>VNPAY</span>
+                        </label>
+                    </div>
+
+                    <div class="method-option">
+                        <input type="radio" id="paypal" name="method" value="PAYPAL" />
+                        <label for="paypal">
+                            <img src="~/images/logo/paypal-logo.png" />
+                            <span>PayPal</span>
+                        </label>
+                    </div>
+
+                    <div class="method-option">
+                        <input type="radio" id="momo" name="method" value="MOMO" />
+                        <label for="momo">
+                            <img src="~/images/logo/momo-logo.png" />
+                            <span>MoMo</span>
+                        </label>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="action-row">
+                <button type="submit" class="btn-submit">Tiến hành thanh toán</button>
+            </div>
+        </form>
+    </div>
+</div>

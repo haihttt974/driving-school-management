@@ -1,0 +1,93 @@
+﻿@{
+    ViewData["Title"] = "Thanh toán thành công";
+}
+
+<style>
+    body {
+        background: #f5f6f8;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .wrapper {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 40px;
+        width: 420px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+        animation: fadeUp 0.5s ease;
+    }
+
+    .icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #ecfdf5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+        margin-bottom: 20px;
+        font-size: 28px;
+        color: #059669;
+    }
+
+    .title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 10px;
+    }
+
+    .desc {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 25px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: none;
+        background: #111827;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s ease;
+    }
+
+    .btn:hover {
+        background: #020617;
+        transform: translateY(-1px);
+    }
+
+    @@keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="wrapper">
+    <div class="card">
+        <div class="icon">✔</div>
+        <div class="title">Thanh toán thành công</div>
+        <div class="desc">
+            Giao dịch của bạn đã được xử lý thành công.
+        </div>
+
+        <a href="/KhoaHoc" class="btn">Quay về khóa học</a>
+    </div>
+</div>
