@@ -1941,6 +1941,326 @@ BEGIN
         LEFT JOIN DA_HOC_HANG dhh ON 1 = 1;
 END;
 /
+-- THHANH TOÁN
+CREATE OR REPLACE PROCEDURE SP_PAYMENT_START
+(
+    p_userId    IN NUMBER,
+    p_hoSoId    IN NUMBER,
+    p_khoaHocId IN NUMBER,
+    p_cursor    OUT SYS_REFCURSOR
+)
+AS
+    v_hocVienId           NUMBER;
+    v_hoTenHocVien        NVARCHAR2(100);
+    v_hangHoSoId          NUMBER;
+    v_hangKhoaHocId       NUMBER;
+    v_tenKhoaHoc          NVARCHAR2(200);
+    v_tenHang             NVARCHAR2(100);
+    v_hocPhi              NUMBER(18,2);
+    v_tenPhieu            NVARCHAR2(300);
+    v_noiDungMacDinh      NVARCHAR2(500);
+    v_phieuId             NUMBER;
+BEGIN
+    -- kiểm tra hồ sơ thuộc user
+    SELECT hv.hocVienId, hv.hoTen
+    INTO v_hocVienId, v_hoTenHocVien
+    FROM HocVien hv
+    JOIN HoSoThiSinh hs ON hs.hocVienId = hv.hocVienId
+    WHERE hv.userId = p_userId
+      AND hs.hoSoId = p_hoSoId;
+
+    -- kiểm tra hồ sơ đã duyệt và lấy hạng hồ sơ
+    SELECT hs.hangId
+    INTO v_hangHoSoId
+    FROM HoSoThiSinh hs
+    WHERE hs.hoSoId = p_hoSoId
+      AND hs.trangThai = N'Đã duyệt';
+
+    -- lấy thông tin khóa học
+    SELECT kh.hangId,
+           kh.tenKhoaHoc,
+           hg.tenHang,
+           hg.hocPhi
+    INTO v_hangKhoaHocId,
+         v_tenKhoaHoc,
+         v_tenHang,
+         v_hocPhi
+    FROM KhoaHoc kh
+    JOIN HangGplx hg ON hg.hangId = kh.hangId
+    WHERE kh.khoaHocId = p_khoaHocId
+      AND kh.trangThai = N'Sắp khai giảng';
+
+    -- kiểm tra hồ sơ phù hợp với khóa học
+    IF v_hangHoSoId <> v_hangKhoaHocId THEN
+        OPEN p_cursor FOR
+            SELECT
+                0 AS isValid,
+                N'Hồ sơ không phù hợp với khóa học.' AS message,
+                CAST(NULL AS NUMBER) AS phieuId,
+                CAST(NULL AS NUMBER) AS khoaHocId,
+                CAST(NULL AS NVARCHAR2(200)) AS tenKhoaHoc,
+                CAST(NULL AS NUMBER) AS hoSoId,
+                CAST(NULL AS NVARCHAR2(100)) AS hoTenHocVien,
+                CAST(NULL AS NVARCHAR2(100)) AS tenHang,
+                CAST(NULL AS NUMBER(18,2)) AS soTien,
+                CAST(NULL AS DATE) AS ngayLap,
+                CAST(NULL AS NVARCHAR2(500)) AS noiDungMacDinh,
+                CAST(NULL AS NVARCHAR2(100)) AS phuongThuc
+            FROM dual;
+        RETURN;
+    END IF;
+
+    v_tenPhieu := N'Thanh toán khóa học ' || v_tenKhoaHoc || N' - ' || v_hoTenHocVien;
+    v_noiDungMacDinh := v_hoTenHocVien || N' Thanh toán khóa học ' || v_tenKhoaHoc;
+
+    -- tạo phiếu thanh toán mới
+    INSERT INTO PhieuThanhToan
+    (
+        tenPhieu,
+        ngayLap,
+        tongTien,
+        ngayNop,
+        phuongThuc
+    )
+    VALUES
+    (
+        v_tenPhieu,
+        SYSTIMESTAMP,
+        v_hocPhi,
+        NULL,
+        NULL
+    )
+    RETURNING phieuId INTO v_phieuId;
+
+    -- tạo chi tiết phiếu thanh toán
+    INSERT INTO ChiTietPhieuThanhToan
+    (
+        hoSoId,
+        phieuId,
+        loaiPhi,
+        ghiChu
+    )
+    VALUES
+    (
+        p_hoSoId,
+        v_phieuId,
+        N'Khóa học',
+        NULL
+    );
+
+    OPEN p_cursor FOR
+        SELECT
+            1 AS isValid,
+            N'Hợp lệ' AS message,
+            pt.phieuId,
+            kh.khoaHocId,
+            kh.tenKhoaHoc,
+            hs.hoSoId,
+            hv.hoTen AS hoTenHocVien,
+            hg.tenHang,
+            pt.tongTien AS soTien,
+            pt.ngayLap,
+            v_noiDungMacDinh AS noiDungMacDinh,
+            NVL(pt.phuongThuc, N'') AS phuongThuc
+        FROM PhieuThanhToan pt
+        JOIN ChiTietPhieuThanhToan ct ON ct.phieuId = pt.phieuId
+        JOIN HoSoThiSinh hs ON hs.hoSoId = ct.hoSoId
+        JOIN HocVien hv ON hv.hocVienId = hs.hocVienId
+        JOIN KhoaHoc kh ON kh.khoaHocId = p_khoaHocId
+        JOIN HangGplx hg ON hg.hangId = kh.hangId
+        WHERE pt.phieuId = v_phieuId
+          AND hs.hoSoId = p_hoSoId;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        OPEN p_cursor FOR
+            SELECT
+                0 AS isValid,
+                N'Không đủ điều kiện tạo phiếu thanh toán.' AS message,
+                CAST(NULL AS NUMBER) AS phieuId,
+                CAST(NULL AS NUMBER) AS khoaHocId,
+                CAST(NULL AS NVARCHAR2(200)) AS tenKhoaHoc,
+                CAST(NULL AS NUMBER) AS hoSoId,
+                CAST(NULL AS NVARCHAR2(100)) AS hoTenHocVien,
+                CAST(NULL AS NVARCHAR2(100)) AS tenHang,
+                CAST(NULL AS NUMBER(18,2)) AS soTien,
+                CAST(NULL AS DATE) AS ngayLap,
+                CAST(NULL AS NVARCHAR2(500)) AS noiDungMacDinh,
+                CAST(NULL AS NVARCHAR2(100)) AS phuongThuc
+            FROM dual;
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_PAYMENT_CHOOSE_METHOD
+(
+    p_userId      IN NUMBER,
+    p_phieuId     IN NUMBER,
+    p_method      IN NVARCHAR2,
+    p_noiDung     IN NVARCHAR2,
+    o_result      OUT NUMBER
+)
+AS
+    v_count NUMBER;
+BEGIN
+    -- kiểm tra phiếu có thuộc user không
+    SELECT COUNT(*)
+    INTO v_count
+    FROM PhieuThanhToan pt
+    JOIN ChiTietPhieuThanhToan ct ON ct.phieuId = pt.phieuId
+    JOIN HoSoThiSinh hs ON hs.hoSoId = ct.hoSoId
+    JOIN HocVien hv ON hv.hocVienId = hs.hocVienId
+    WHERE pt.phieuId = p_phieuId
+      AND hv.userId = p_userId;
+
+    IF v_count = 0 THEN
+        o_result := -1;
+        RETURN;
+    END IF;
+
+    UPDATE PhieuThanhToan
+    SET phuongThuc = p_method
+    WHERE phieuId = p_phieuId;
+
+    UPDATE ChiTietPhieuThanhToan
+    SET ghiChu = p_noiDung
+    WHERE phieuId = p_phieuId;
+
+    o_result := 1;
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_PAYMENT_GET_VNPAY_INFO
+(
+    p_userId    IN NUMBER,
+    p_phieuId   IN NUMBER,
+    p_cursor    OUT SYS_REFCURSOR
+)
+AS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT
+            pt.phieuId,
+            pt.tenPhieu,
+            pt.ngayLap,
+            pt.tongTien,
+            pt.ngayNop,
+            NVL(pt.phuongThuc, N'') AS phuongThuc,
+            ct.hoSoId,
+            NVL(ct.ghiChu, N'') AS ghiChu,
+            hs.tenHoSo,
+            hv.hoTen AS hoTenHocVien,
+            kh.khoaHocId,
+            kh.tenKhoaHoc,
+            hg.tenHang
+        FROM PhieuThanhToan pt
+        JOIN ChiTietPhieuThanhToan ct
+            ON ct.phieuId = pt.phieuId
+        JOIN HoSoThiSinh hs
+            ON hs.hoSoId = ct.hoSoId
+        JOIN HocVien hv
+            ON hv.hocVienId = hs.hocVienId
+        JOIN KhoaHoc kh
+            ON kh.hangId = hs.hangId
+        JOIN HangGplx hg
+            ON hg.hangId = kh.hangId
+        WHERE pt.phieuId = p_phieuId
+          AND hv.userId = p_userId
+          AND ct.loaiPhi = N'Khóa học'
+        ORDER BY kh.khoaHocId DESC;
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_PAYMENT_GET_VNPAY_INFO
+(
+    p_userId    IN NUMBER,
+    p_phieuId   IN NUMBER,
+    p_cursor    OUT SYS_REFCURSOR
+)
+AS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT
+            pt.phieuId,
+            pt.tenPhieu,
+            pt.ngayLap,
+            pt.tongTien,
+            pt.ngayNop,
+            NVL(pt.phuongThuc, N'') AS phuongThuc,
+            ct.hoSoId,
+            NVL(ct.ghiChu, N'') AS ghiChu,
+            hs.tenHoSo,
+            hv.hoTen AS hoTenHocVien,
+            kh.khoaHocId,
+            kh.tenKhoaHoc,
+            hg.tenHang
+        FROM PhieuThanhToan pt
+        JOIN ChiTietPhieuThanhToan ct
+            ON ct.phieuId = pt.phieuId
+        JOIN HoSoThiSinh hs
+            ON hs.hoSoId = ct.hoSoId
+        JOIN HocVien hv
+            ON hv.hocVienId = hs.hocVienId
+        JOIN KhoaHoc kh
+            ON kh.hangId = hs.hangId
+        JOIN HangGplx hg
+            ON hg.hangId = kh.hangId
+        WHERE pt.phieuId = p_phieuId
+          AND hv.userId = p_userId
+          AND ct.loaiPhi = N'Khóa học'
+        ORDER BY kh.khoaHocId DESC;
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_PAYMENT_VNPAY_FAIL
+(
+    p_phieuId IN NUMBER,
+    o_result  OUT NUMBER
+)
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM PhieuThanhToan
+    WHERE phieuId = p_phieuId;
+
+    IF v_count = 0 THEN
+        o_result := -1;
+        RETURN;
+    END IF;
+
+    UPDATE PhieuThanhToan
+    SET ngayNop = NULL
+    WHERE phieuId = p_phieuId;
+
+    o_result := 1;
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_PAYMENT_VNPAY_SUCCESS
+(
+    p_phieuId IN NUMBER,
+    o_result  OUT NUMBER
+)
+AS
+    v_count NUMBER;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_count
+    FROM PhieuThanhToan
+    WHERE phieuId = p_phieuId;
+
+    IF v_count = 0 THEN
+        o_result := -1;
+        RETURN;
+    END IF;
+
+    UPDATE PhieuThanhToan
+    SET ngayNop = SYSTIMESTAMP,
+        phuongThuc = N'VNPAY'
+    WHERE phieuId = p_phieuId;
+
+    o_result := 1;
+END;
+/
+
+
+
 
 
 

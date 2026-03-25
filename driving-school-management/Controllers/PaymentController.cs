@@ -1,0 +1,208 @@
+﻿using driving_school_management.Librarys;
+using driving_school_management.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
+using System.Text;
+
+namespace driving_school_management.Controllers
+{
+    [Route("Payment")]
+    public class PaymentController : Controller
+    {
+        private readonly PaymentService _paymentService;
+        private readonly IConfiguration _config;
+
+        public PaymentController(PaymentService paymentService, IConfiguration config)
+        {
+            _paymentService = paymentService;
+            _config = config;
+        }
+
+        // ============================================================
+        // 1) TRANG BẮT ĐẦU THANH TOÁN
+        // ============================================================
+        [HttpGet("StartPayment")]
+        public IActionResult StartPayment(int khoaHocId, int hoSoId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "Auth");
+
+            var model = _paymentService.StartPayment(userId.Value, hoSoId, khoaHocId);
+
+            if (model == null)
+            {
+                TempData["Error"] = "Không tìm thấy dữ liệu thanh toán.";
+                return RedirectToAction("Index", "KhoaHoc");
+            }
+
+            if (model.IsValid == 0)
+            {
+                TempData["Error"] = model.Message;
+                return RedirectToAction("Index", "KhoaHoc");
+            }
+
+            return View("StartPayment", model);
+        }
+
+        // ============================================================
+        // 2) CHỌN PHƯƠNG THỨC THANH TOÁN
+        // ============================================================
+        [HttpPost("ChoosePaymentMethod")]
+        [ValidateAntiForgeryToken]
+        public IActionResult ChoosePaymentMethod(int phieuId, string method, string noiDung)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "Auth");
+
+            var result = _paymentService.ChoosePaymentMethod(userId.Value, phieuId, method, noiDung);
+
+            if (result == -1)
+            {
+                TempData["Error"] = "Không tìm thấy phiếu thanh toán.";
+                return RedirectToAction("Index", "KhoaHoc");
+            }
+
+            if (method == "VNPAY")
+                return RedirectToAction("VnPay", new { phieuId });
+
+            if (method == "PAYPAL")
+                return RedirectToAction("PayPal", new { phieuId });
+
+            if (method == "MOMO")
+                return RedirectToAction("MoMo", new { phieuId });
+
+            TempData["Error"] = "Phương thức thanh toán chưa được hỗ trợ.";
+            return RedirectToAction("Index", "KhoaHoc");
+        }
+
+
+
+
+        [HttpGet("VnPay")]
+        public IActionResult VnPay(int phieuId)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "Auth");
+
+            var hd = _paymentService.GetVnPayInfo(userId.Value, phieuId);
+
+            if (hd == null)
+            {
+                TempData["Error"] = "Không tìm thấy phiếu thanh toán.";
+                return RedirectToAction("Index", "KhoaHoc");
+            }
+
+            var amountDecimal = hd.TongTien;
+            if (amountDecimal <= 0)
+            {
+                TempData["Error"] = "Số tiền thanh toán không hợp lệ.";
+                return RedirectToAction("StartPayment", new { khoaHocId = hd.KhoaHocId, hoSoId = hd.HoSoId });
+            }
+
+            long amount = (long)amountDecimal;
+
+            string baseUrl = _config["VnPay:BaseUrl"]!;
+            string tmnCode = _config["VnPay:TmnCode"]!;
+            string hashSecret = _config["VnPay:HashSecret"]!;
+            string orderType = _config["VnPay:OrderType"] ?? "other";
+            string locale = _config["VnPay:Locale"] ?? "vn";
+            string currCode = _config["VnPay:CurrCode"] ?? "VND";
+
+            string returnUrl = Url.Action("VnPayReturn", "Payment", null, Request.Scheme)!;
+
+            var vnp = new VnPayLibrary();
+            vnp.AddRequestData("vnp_Version", VnPayLibrary.VERSION);
+            vnp.AddRequestData("vnp_Command", "pay");
+            vnp.AddRequestData("vnp_TmnCode", tmnCode);
+            vnp.AddRequestData("vnp_Amount", (amount * 100).ToString());
+            vnp.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
+            vnp.AddRequestData("vnp_CurrCode", currCode);
+
+            string ip = HttpContext.Connection.RemoteIpAddress?.ToString()!;
+            if (string.IsNullOrWhiteSpace(ip))
+                ip = "127.0.0.1";
+
+            vnp.AddRequestData("vnp_IpAddr", ip);
+            vnp.AddRequestData("vnp_Locale", locale);
+
+            string infoRaw = string.IsNullOrWhiteSpace(hd.GhiChu)
+                ? $"Thanh toan khoa hoc {hd.TenKhoaHoc}"
+                : hd.GhiChu;
+
+            vnp.AddRequestData("vnp_OrderInfo", RemoveVietnameseSigns(infoRaw));
+            vnp.AddRequestData("vnp_OrderType", orderType);
+            vnp.AddRequestData("vnp_ReturnUrl", returnUrl);
+
+            string txnRef = $"{phieuId}-{DateTime.Now:yyyyMMddHHmmss}";
+            vnp.AddRequestData("vnp_TxnRef", txnRef);
+
+            string paymentUrl = vnp.CreateRequestUrl(baseUrl, hashSecret);
+            return Redirect(paymentUrl);
+        }
+
+        [HttpGet("VnPayReturn")]
+        public IActionResult VnPayReturn()
+        {
+            var vnp = new VnPayLibrary();
+
+            foreach (var key in Request.Query.Keys)
+                vnp.AddResponseData(key, Request.Query[key]!);
+
+            string secureHash = Request.Query["vnp_SecureHash"]!;
+            bool isValid = vnp.ValidateSignature(secureHash, _config["VnPay:HashSecret"]!);
+
+            if (!isValid)
+            {
+                ViewBag.Message = "Chữ ký VNPAY không hợp lệ.";
+                return View("PaymentFail");
+            }
+
+            string txnRef = vnp.GetResponseData("vnp_TxnRef");
+            int phieuId = int.Parse(txnRef.Split('-')[0]);
+
+            string responseCode = vnp.GetResponseData("vnp_ResponseCode");
+
+            if (responseCode == "00")
+            {
+                var result = _paymentService.MarkVnPaySuccess(phieuId);
+
+                if (result == -1)
+                {
+                    ViewBag.Message = "Không tìm thấy phiếu thanh toán khi VNPAY trả về.";
+                    return View("PaymentFail");
+                }
+
+                TempData["Success"] = "Thanh toán thành công!";
+                return View("PaymentSuccess");
+            }
+            else
+            {
+                _paymentService.MarkVnPayFail(phieuId);
+                ViewBag.Message = "Thanh toán thất bại. Mã lỗi: " + responseCode;
+                return View("PaymentFail");
+            }
+        }
+        private static string RemoveVietnameseSigns(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+            string normalized = input.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+
+            foreach (var ch in normalized)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+                    sb.Append(ch);
+            }
+
+            return sb.ToString()
+                .Normalize(NormalizationForm.FormC)
+                .Replace("đ", "d")
+                .Replace("Đ", "D");
+        }
+    }
+}
