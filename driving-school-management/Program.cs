@@ -22,6 +22,7 @@ builder.Services.AddScoped<IThiMoPhongService, ThiMoPhongService>();
 builder.Services.AddScoped<IMoPhongService, MoPhongService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IPayPalService, PayPalService>();
+builder.Services.AddScoped<IMomoService, MomoService>();
 //
 builder.Services.AddHttpClient();
 //
