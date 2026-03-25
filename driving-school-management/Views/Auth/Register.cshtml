@@ -94,15 +94,28 @@
                     <p>Tạo tài khoản mới</p>
                 </div>
 
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success">@TempData["Success"]</div>
+                }
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["Error"]</div>
+                }
+
                 <form id="registerForm" asp-controller="Auth" asp-action="Register" method="post">
 
-                    <!-- Username -->
                     <div class="form-floating mb-3">
                         <input name="username" class="form-control" placeholder="Username" required />
                         <label>Tên đăng nhập</label>
                     </div>
 
-                    <!-- Password -->
+                    <div class="form-floating mb-3">
+                        <input name="email" type="email" class="form-control" placeholder="Email" required />
+                        <label>Email</label>
+                    </div>
+
                     <div class="form-floating mb-3 position-relative">
                         <input id="password" name="password" type="password" class="form-control" placeholder="Password" required />
                         <label>Mật khẩu</label>
@@ -112,9 +125,8 @@
                         </button>
                     </div>
 
-                    <!-- Confirm Password -->
                     <div class="form-floating mb-3 position-relative">
-                        <input id="confirmPassword" type="password" class="form-control" placeholder="Confirm Password" required />
+                        <input id="confirmPassword" name="confirmPassword" type="password" class="form-control" placeholder="Confirm Password" required />
                         <label>Nhập lại mật khẩu</label>
 
                         <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword','iconPwd2')">
@@ -124,8 +136,7 @@
 
                     <div id="pwdMatch" class="mb-3"></div>
 
-                    <!-- Button -->
-                    <button id="btnRegister" type="submit" class="btn btn-register w-100">
+                    <button id="btnRegister" type="submit" class="btn btn-register w-100" disabled>
                         <span class="btn-text">Đăng ký</span>
                         <span class="btn-spinner">
                             <span class="spinner-border spinner-border-sm"></span>
@@ -161,22 +172,24 @@
             }
         }
 
+        const form = document.getElementById("registerForm");
         const pwd = document.getElementById("password");
         const confirmPwd = document.getElementById("confirmPassword");
         const match = document.getElementById("pwdMatch");
         const btn = document.getElementById("btnRegister");
 
         function validate() {
-            if (confirmPwd.value.length > 0) {
-                if (pwd.value === confirmPwd.value) {
-                    match.innerHTML = "<span style='color:green'>✔ Mật khẩu khớp</span>";
-                    btn.disabled = false;
-                } else {
-                    match.innerHTML = "<span style='color:red'>✘ Mật khẩu không khớp</span>";
-                    btn.disabled = true;
-                }
-            } else {
+            if (pwd.value.length === 0 || confirmPwd.value.length === 0) {
                 match.innerHTML = "";
+                btn.disabled = true;
+                return;
+            }
+
+            if (pwd.value === confirmPwd.value) {
+                match.innerHTML = "<span style='color:green'>✔ Mật khẩu khớp</span>";
+                btn.disabled = false;
+            } else {
+                match.innerHTML = "<span style='color:red'>✘ Mật khẩu không khớp</span>";
                 btn.disabled = true;
             }
         }
@@ -184,7 +197,14 @@
         pwd.addEventListener("input", validate);
         confirmPwd.addEventListener("input", validate);
 
-        document.getElementById("registerForm").addEventListener("submit", function () {
+        form.addEventListener("submit", function (e) {
+            if (pwd.value !== confirmPwd.value) {
+                e.preventDefault();
+                match.innerHTML = "<span style='color:red'>✘ Mật khẩu không khớp</span>";
+                btn.disabled = true;
+                return;
+            }
+
             btn.classList.add("loading");
             btn.disabled = true;
         });
