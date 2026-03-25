@@ -10,22 +10,25 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("OracleDb")));
 
 //thêm services
-builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<AdminExamService>();
 builder.Services.AddScoped<KhoaHocService>();
 builder.Services.AddScoped<HocService>();
 builder.Services.AddScoped<LyThuyetService>();
 builder.Services.AddScoped<AdminUserService>();
+builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<IThiMoPhongService, ThiMoPhongService>();
 builder.Services.AddScoped<IMoPhongService, MoPhongService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPayPalService, PayPalService>();
+builder.Services.AddScoped<IMomoService, MomoService>();
+//
+builder.Services.AddHttpClient();
 //
 builder.Services.AddSession();
 builder.Services.AddHttpContextAccessor();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
