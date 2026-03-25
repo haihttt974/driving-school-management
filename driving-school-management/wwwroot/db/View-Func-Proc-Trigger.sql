@@ -4,22 +4,39 @@
 CREATE OR REPLACE PROCEDURE PROC_LOGIN
 (
     p_username IN NVARCHAR2,
-    o_userId OUT NUMBER,
-    o_roleId OUT NUMBER,
+    o_userId   OUT NUMBER,
+    o_roleId   OUT NUMBER,
     o_username OUT NVARCHAR2,
     o_password OUT NVARCHAR2,
     o_isActive OUT NUMBER
 )
 AS
 BEGIN
-    SELECT userId, roleId, userName, "password", isActive
-    INTO o_userId, o_roleId, o_username, o_password, o_isActive
-    FROM "User"
-    WHERE userName = p_username;
+    BEGIN
+        SELECT u.userId,
+               u.roleId,
+               u.userName,
+               u."password",
+               u.isActive
+        INTO   o_userId,
+               o_roleId,
+               o_username,
+               o_password,
+               o_isActive
+        FROM "User" u
+        LEFT JOIN HocVien hv ON hv.userId = u.userId
+        WHERE u.userName = p_username
+           OR hv.email = p_username
+        FETCH FIRST 1 ROWS ONLY;
 
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        o_userId := NULL;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            o_userId   := NULL;
+            o_roleId   := NULL;
+            o_username := NULL;
+            o_password := NULL;
+            o_isActive := NULL;
+    END;
 END;
 /
 
@@ -27,12 +44,15 @@ CREATE OR REPLACE PROCEDURE PROC_REGISTER
 (
     p_username IN NVARCHAR2,
     p_password IN NVARCHAR2,
-    p_roleId IN NUMBER,
-    o_result OUT NUMBER
+    p_email    IN NVARCHAR2,
+    p_roleId   IN NUMBER,
+    o_result   OUT NUMBER
 )
 AS
     v_count NUMBER;
+    v_userId NUMBER;
 BEGIN
+    -- Kiểm tra username tồn tại
     SELECT COUNT(*) INTO v_count
     FROM "User"
     WHERE userName = p_username;
@@ -42,8 +62,34 @@ BEGIN
         RETURN;
     END IF;
 
+    -- Insert User
     INSERT INTO "User"(roleId, userName, "password", isActive)
-    VALUES (p_roleId, p_username, p_password, 1);
+    VALUES (p_roleId, p_username, p_password, 1)
+    RETURNING userId INTO v_userId;
+
+    -- Tạo hồ sơ học viên tự động
+    INSERT INTO HocVien
+    (
+        hoTen,
+        soCmndCccd,
+        namSinh,
+        gioiTinh,
+        sdt,
+        email,
+        avatarUrl,
+        userId
+    )
+    VALUES
+    (
+        p_username,          -- tạm dùng username
+        'UNKNOWN',           -- chưa có dữ liệu
+        NULL,
+        NULL,
+        NULL,
+        p_email,
+        NULL,
+        v_userId
+    );
 
     o_result := 1;
 END;
