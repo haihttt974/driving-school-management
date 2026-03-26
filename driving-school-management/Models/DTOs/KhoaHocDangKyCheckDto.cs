@@ -13,9 +13,9 @@
         public string TenHang { get; set; } = string.Empty;
         public string MoTa { get; set; } = string.Empty;
         public string LoaiPhuongTien { get; set; } = string.Empty;
-        public int SoCauHoi { get; set; }
-        public int DiemDat { get; set; }
-        public int ThoiGianTn { get; set; }
+        public int? SoCauHoi { get; set; }
+        public int? DiemDat { get; set; }
+        public int? ThoiGianTn { get; set; }
         public decimal HocPhi { get; set; }
 
         public int IsMoDangKy { get; set; }
@@ -27,5 +27,21 @@
         public int DaTungHocHang { get; set; }
         public int SoLanDaHocHang { get; set; }
         public int HasHoSoChuaDuyet { get; set; }
+
+        public int BiTrungThoiGianHoc { get; set; }
+        public int KhoaHocIdTrungThoiGian { get; set; }
+        public string TenKhoaHocTrungThoiGian { get; set; } = string.Empty;
+        public DateTime? NgayBatDauTrungThoiGian { get; set; }
+        public DateTime? NgayKetThucTrungThoiGian { get; set; }
+
+        public int DaTungDangKyCungHang { get; set; }
+        public int KhoaHocIdCungHangGanNhat { get; set; }
+        public string TenKhoaHocCungHangGanNhat { get; set; } = string.Empty;
+
+        public int CoTheDangKy { get; set; }
+
+        public int DaDangKyChinhKhoaHoc { get; set; }
+        public int KhoaHocIdDaDangKy { get; set; }
+        public string TenKhoaHocDaDangKy { get; set; } = string.Empty;
     }
 }

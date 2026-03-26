@@ -11,13 +11,11 @@ namespace driving_school_management.Controllers
             _service = service;
         }
 
-        // Trang giao diện
         public IActionResult Index()
         {
             return View();
         }
 
-        // API lấy danh sách khóa học đang mở
         [HttpGet]
         public IActionResult GetDanhSachKhoaHocDangMo()
         {
@@ -25,7 +23,6 @@ namespace driving_school_management.Controllers
             return Json(data);
         }
 
-        // API lấy chi tiết khóa học
         [HttpGet]
         public IActionResult GetKhoaHocDetail(int id)
         {
@@ -36,6 +33,7 @@ namespace driving_school_management.Controllers
 
             return Json(data);
         }
+
         [HttpGet]
         public IActionResult CheckDangKyKhoaHoc(int khoaHocId)
         {
@@ -91,14 +89,37 @@ namespace driving_school_management.Controllers
                 });
             }
 
-            if (check.DaTungHocHang == 1)
+            if (check.BiTrungThoiGianHoc == 1)
+            {
+                var tuNgay = check.NgayBatDauTrungThoiGian?.ToString("dd/MM/yyyy") ?? "";
+                var denNgay = check.NgayKetThucTrungThoiGian?.ToString("dd/MM/yyyy") ?? "";
+
+                return Json(new
+                {
+                    success = false,
+                    blockedByTimeConflict = true,
+                    message = $"Bạn đã đăng ký khóa học \"{check.TenKhoaHocTrungThoiGian}\" có thời gian học từ {tuNgay} đến {denNgay}. Bạn không thể đăng ký thêm khóa học khác trong khoảng thời gian này."
+                });
+            }
+
+            if (check.DaTungDangKyCungHang == 1)
             {
                 return Json(new
                 {
                     success = true,
                     needConfirmAgain = true,
-                    message = $"Bạn đã từng học khóa học của hạng {check.TenHang} rồi. Nếu vẫn muốn học tiếp, hãy bấm tiếp tục.",
+                    message = $"Bạn đã từng đăng ký khóa học hạng {check.TenHang}. Nếu vẫn muốn tiếp tục đăng ký khóa học \"{check.TenKhoaHoc}\" thì hãy xác nhận để tiếp tục.",
                     redirectUrl = Url.Action("Confirm", "KhoaHoc", new { khoaHocId })
+                });
+            }
+
+            if (check.DaDangKyChinhKhoaHoc == 1)
+            {
+                return Json(new
+                {
+                    success = false,
+                    alreadyRegisteredSameCourse = true,
+                    message = $"Bạn đã đăng ký khóa học \"{check.TenKhoaHocDaDangKy}\" rồi, không thể đăng ký lại."
                 });
             }
 
@@ -139,6 +160,21 @@ namespace driving_school_management.Controllers
                 return RedirectToAction("Index", "KhoaHoc");
             }
 
+            if (model.BiTrungThoiGianHoc == 1)
+            {
+                var tuNgay = model.NgayBatDauTrungThoiGian?.ToString("dd/MM/yyyy") ?? "";
+                var denNgay = model.NgayKetThucTrungThoiGian?.ToString("dd/MM/yyyy") ?? "";
+
+                TempData["Error"] = $"Bạn đã có khóa học trùng thời gian học từ {tuNgay} đến {denNgay}, nên không thể đăng ký thêm.";
+                return RedirectToAction("Index", "KhoaHoc");
+            }
+
+            if (model.DaDangKyChinhKhoaHoc == 1)
+            {
+                TempData["Error"] = $"Bạn đã đăng ký khóa học \"{model.TenKhoaHocDaDangKy}\" rồi.";
+                return RedirectToAction("Index", "KhoaHoc");
+            }
+
             return View(model);
         }
 
@@ -154,7 +190,12 @@ namespace driving_school_management.Controllers
             if (model == null)
                 return NotFound();
 
-            if (model.IsMoDangKy == 0 || model.HasHoSoPhuHop == 0 || model.HasHoSoChuaDuyet == 1)
+            if (model.IsMoDangKy == 0
+                || model.HasHoSoPhuHop == 0
+                || model.HasHoSoChuaDuyet == 1
+                || model.DaDangKyChinhKhoaHoc == 1
+                || model.BiTrungThoiGianHoc == 1
+                || model.CoTheDangKy == 0)
             {
                 TempData["Error"] = "Không đủ điều kiện đăng ký khóa học.";
                 return RedirectToAction("Index", "KhoaHoc");
