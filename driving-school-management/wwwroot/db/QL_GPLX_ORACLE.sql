@@ -4318,4 +4318,16 @@ MODIFY NGAYLAP TIMESTAMP;
 /
 ALTER TABLE PHIEUTHANHTOAN
 MODIFY NGAYNOP TIMESTAMP;
+/
+-- thêm id_kết quả học tập để biết được thanh toán cho khóa học nào
+ALTER TABLE ChiTietPhieuThanhToan
+ADD ketQuaHocTapId NUMBER;
+/
+ALTER TABLE ChiTietPhieuThanhToan
+ADD CONSTRAINT fk_ctpttt_kqht
+FOREIGN KEY (ketQuaHocTapId)
+REFERENCES KetQuaHocTap(ketQuaHocTapId);
+/
+
+
 COMMIT;

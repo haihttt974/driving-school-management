@@ -133,6 +133,21 @@ public class KhoaHocService
                         DaTungHocHang = GetInt32Value(reader["daTungHocHang"]),
                         SoLanDaHocHang = GetInt32Value(reader["soLanDaHocHang"]),
                         HasHoSoChuaDuyet = GetInt32Value(reader["hasHoSoChuaDuyet"]),
+
+                        BiTrungThoiGianHoc = GetInt32Value(reader["biTrungThoiGianHoc"]),
+                        KhoaHocIdTrungThoiGian = GetInt32Value(reader["khoaHocIdTrungThoiGian"]),
+                        TenKhoaHocTrungThoiGian = reader["tenKhoaHocTrungThoiGian"] == DBNull.Value ? string.Empty : reader["tenKhoaHocTrungThoiGian"].ToString()!,
+                        NgayBatDauTrungThoiGian = reader["ngayBatDauTrungThoiGian"] == DBNull.Value ? null : Convert.ToDateTime(reader["ngayBatDauTrungThoiGian"]),
+                        NgayKetThucTrungThoiGian = reader["ngayKetThucTrungThoiGian"] == DBNull.Value ? null : Convert.ToDateTime(reader["ngayKetThucTrungThoiGian"]),
+
+                        DaTungDangKyCungHang = GetInt32Value(reader["daTungDangKyCungHang"]),
+                        KhoaHocIdCungHangGanNhat = GetInt32Value(reader["khoaHocIdCungHangGanNhat"]),
+                        TenKhoaHocCungHangGanNhat = reader["tenKhoaHocCungHangGanNhat"] == DBNull.Value ? string.Empty : reader["tenKhoaHocCungHangGanNhat"].ToString()!,
+
+                        CoTheDangKy = GetInt32Value(reader["coTheDangKy"]),
+                        DaDangKyChinhKhoaHoc = GetInt32Value(reader["daDangKyChinhKhoaHoc"]),
+                        KhoaHocIdDaDangKy = GetInt32Value(reader["khoaHocIdDaDangKy"]),
+                        TenKhoaHocDaDangKy = reader["tenKhoaHocDaDangKy"] == DBNull.Value ? string.Empty : reader["tenKhoaHocDaDangKy"].ToString()!
                     };
                 }
             }
