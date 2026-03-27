@@ -87,7 +87,15 @@ namespace driving_school_management.Controllers
 
             HttpContext.Session.SetObject("RegisterOtp", otpSession);
 
-            await _emailService.SendOtpEmailAsync(model.Email, otpCode);
+            try
+            {
+                await _emailService.SendOtpEmailAsync(model.Email, otpCode);
+            }
+            catch
+            {
+                TempData["Error"] = "Không gửi được OTP đến email.";
+                return View(model);
+            }
 
             TempData["Success"] = "Đã gửi OTP về email";
             return RedirectToAction("VerifyOtp");
@@ -154,7 +162,7 @@ namespace driving_school_management.Controllers
                 return RedirectToAction("Register");
             }
 
-            var loginResult = await _authService.Login(sessionData.Email, sessionData.Password);
+            var loginResult = await _authService.Login(sessionData.Username, sessionData.Password);
 
             if (loginResult == null)
             {
