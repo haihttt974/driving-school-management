@@ -1,3 +1,4 @@
+using driving_school_management.Helpers;
 using driving_school_management.Models;
 using driving_school_management.Services;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("OracleDb")));
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
 
 //thêm services
 builder.Services.AddScoped<AdminDashboardService>();
@@ -20,6 +23,7 @@ builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<IThiMoPhongService, ThiMoPhongService>();
 builder.Services.AddScoped<IMoPhongService, MoPhongService>();
 builder.Services.AddScoped<IHomeService, HomeService>();
+builder.Services.AddScoped<IEmailTemplateService, EmailTemplateService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPayPalService, PayPalService>();
