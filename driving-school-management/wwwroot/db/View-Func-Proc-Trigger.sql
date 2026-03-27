@@ -1162,7 +1162,7 @@ END;
 ------------------------------------------------------------
 -- 1. TYPE PHỤ TRỢ CHO ĐỀ NGẪU NHIÊN
 ------------------------------------------------------------
-CREATE OR REPLACE TYPE OBJ_MP_RANDOM_ROW AS OBJECT
+CREATE OR REPLACE TYPE OBJ_MP_RANDOM_ROW FORCE AS OBJECT
 (
     IDTHMP          NUMBER,
     TIEUDE          NVARCHAR2(255),
@@ -1173,7 +1173,7 @@ CREATE OR REPLACE TYPE OBJ_MP_RANDOM_ROW AS OBJECT
     KHO             NUMBER
 );
 /
-CREATE OR REPLACE TYPE TAB_MP_RANDOM_ROW AS TABLE OF OBJ_MP_RANDOM_ROW;
+CREATE OR REPLACE TYPE TAB_MP_RANDOM_ROW FORCE AS TABLE OF OBJ_MP_RANDOM_ROW;
 /
 
 ------------------------------------------------------------
