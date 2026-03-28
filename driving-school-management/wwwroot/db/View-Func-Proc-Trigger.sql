@@ -3210,9 +3210,187 @@ BEGIN
         WHERE rn = 1;
 END;
 /
+-- HỒ SƠ THÍ SINH
+CREATE OR REPLACE VIEW VW_DANH_SACH_HOSO AS
+SELECT 
+    hs.hoSoId,
+    hv.hoTen,
+    hv.sdt,
+    hg.tenHang,
+    hs.ngayDangKy,
+    hs.trangThai,
+    pksk.thoiHan,
+    
+    FLOOR(MONTHS_BETWEEN(ADD_MONTHS(hs.ngayDangKy, 12), SYSDATE)) AS soThangConLai,
+    FLOOR(ADD_MONTHS(hs.ngayDangKy, 12) - SYSDATE) AS soNgayConLai
 
+FROM HoSoThiSinh hs
+JOIN HocVien hv ON hs.hocVienId = hv.hocVienId
+JOIN HangGplx hg ON hs.hangId = hg.hangId
+LEFT JOIN PhieuKhamSucKhoe pksk ON hs.khamSucKhoeId = pksk.khamSucKhoeId;
+/
+CREATE OR REPLACE PROCEDURE SP_GET_DANH_SACH_HOSO (
+    p_cursor OUT SYS_REFCURSOR
+)
+AS
+BEGIN
+    OPEN p_cursor FOR
+    SELECT * FROM VW_DANH_SACH_HOSO
+    ORDER BY ngayDangKy DESC;
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_GET_HOSO_DETAIL (
+    p_hoSoId IN NUMBER,
+    p_info OUT SYS_REFCURSOR,
+    p_images OUT SYS_REFCURSOR
+)
+AS
+BEGIN
+    -- Thông tin chính
+    OPEN p_info FOR
+    SELECT 
+        hs.hoSoId,
+        hv.hoTen,
+        hv.soCmndCccd,
+        hv.namSinh,
+        hv.gioiTinh,
+        hv.sdt,
+        hv.email,
+        hv.avatarUrl,
+        hg.tenHang,
+        hs.ngayDangKy,
+        hs.trangThai,
+        hs.ghiChu,
+        pksk.hieuLuc,
+        pksk.thoiHan,
+        pksk.khamMat,
+        pksk.huyetAp,
+        pksk.chieuCao,
+        pksk.canNang
+    FROM HoSoThiSinh hs
+    JOIN HocVien hv ON hs.hocVienId = hv.hocVienId
+    JOIN HangGplx hg ON hs.hangId = hg.hangId
+    LEFT JOIN PhieuKhamSucKhoe pksk ON hs.khamSucKhoeId = pksk.khamSucKhoeId
+    WHERE hs.hoSoId = p_hoSoId;
 
+    -- Danh sách ảnh GSKK
+    OPEN p_images FOR
+    SELECT urlAnh
+    FROM AnhGksk
+    WHERE khamSucKhoeId = (
+        SELECT khamSucKhoeId FROM HoSoThiSinh WHERE hoSoId = p_hoSoId
+    );
+END;
+/
+CREATE OR REPLACE PROCEDURE SP_GET_MY_HOSO (
+    p_userId IN NUMBER,
+    p_cursor OUT SYS_REFCURSOR
+)
+AS
+BEGIN
+    OPEN p_cursor FOR
+    SELECT 
+        hs.hoSoId,
+        hv.hoTen,
+        hv.avatarUrl,
+        hs.tenHoSo,
+        hg.tenHang,
+        hs.ngayDangKy,
+        hs.trangThai,
+        FLOOR(MONTHS_BETWEEN(ADD_MONTHS(hs.ngayDangKy, 12), SYSDATE)) AS soThangConLai,
+        FLOOR(ADD_MONTHS(hs.ngayDangKy, 12) - SYSDATE) AS soNgayConLai
+    FROM HoSoThiSinh hs
+    JOIN HocVien hv ON hs.hocVienId = hv.hocVienId
+    JOIN HangGplx hg ON hs.hangId = hg.hangId
+    WHERE hv.userId = p_userId
+    ORDER BY hs.ngayDangKy DESC;
+END;
+/
 
+CREATE OR REPLACE PROCEDURE SP_GET_MY_HOSO_DETAIL (
+    p_hoSoId IN NUMBER,
+    p_userId IN NUMBER,
+    p_info OUT SYS_REFCURSOR,
+    p_images OUT SYS_REFCURSOR
+)
+AS
+    v_khamSucKhoeId NUMBER;
+BEGIN
+    SELECT hs.khamSucKhoeId
+    INTO v_khamSucKhoeId
+    FROM HoSoThiSinh hs
+    JOIN HocVien hv ON hs.hocVienId = hv.hocVienId
+    WHERE hs.hoSoId = p_hoSoId
+      AND hv.userId = p_userId;
+
+    OPEN p_info FOR
+    SELECT 
+        hs.hoSoId,
+        hv.hoTen,
+        hv.soCmndCccd,
+        hv.namSinh,
+        hv.gioiTinh,
+        hv.sdt,
+        hv.email,
+        hv.avatarUrl,
+        hs.tenHoSo,
+        hs.loaiHoSo,
+        hs.ngayDangKy,
+        hs.trangThai,
+        hs.ghiChu,
+        hg.tenHang,
+        pksk.hieuLuc,
+        pksk.thoiHan,
+        pksk.khamMat,
+        pksk.huyetAp,
+        pksk.chieuCao,
+        pksk.canNang
+    FROM HoSoThiSinh hs
+    JOIN HocVien hv ON hs.hocVienId = hv.hocVienId
+    JOIN HangGplx hg ON hs.hangId = hg.hangId
+    LEFT JOIN PhieuKhamSucKhoe pksk ON hs.khamSucKhoeId = pksk.khamSucKhoeId
+    WHERE hs.hoSoId = p_hoSoId
+      AND hv.userId = p_userId;
+
+    OPEN p_images FOR
+    SELECT ag.urlAnh
+    FROM AnhGksk ag
+    WHERE ag.khamSucKhoeId = v_khamSucKhoeId
+    ORDER BY ag.anhId;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        OPEN p_info FOR
+        SELECT 
+            CAST(NULL AS NUMBER) AS hoSoId,
+            CAST(NULL AS NVARCHAR2(100)) AS hoTen,
+            CAST(NULL AS NVARCHAR2(20)) AS soCmndCccd,
+            CAST(NULL AS DATE) AS namSinh,
+            CAST(NULL AS NVARCHAR2(10)) AS gioiTinh,
+            CAST(NULL AS NVARCHAR2(15)) AS sdt,
+            CAST(NULL AS NVARCHAR2(50)) AS email,
+            CAST(NULL AS NVARCHAR2(500)) AS avatarUrl,
+            CAST(NULL AS NVARCHAR2(100)) AS tenHoSo,
+            CAST(NULL AS NVARCHAR2(50)) AS loaiHoSo,
+            CAST(NULL AS DATE) AS ngayDangKy,
+            CAST(NULL AS NVARCHAR2(50)) AS trangThai,
+            CAST(NULL AS NVARCHAR2(255)) AS ghiChu,
+            CAST(NULL AS NVARCHAR2(20)) AS tenHang,
+            CAST(NULL AS NVARCHAR2(50)) AS hieuLuc,
+            CAST(NULL AS DATE) AS thoiHan,
+            CAST(NULL AS NVARCHAR2(50)) AS khamMat,
+            CAST(NULL AS NVARCHAR2(50)) AS huyetAp,
+            CAST(NULL AS NUMBER(5,2)) AS chieuCao,
+            CAST(NULL AS NUMBER(5,2)) AS canNang
+        FROM dual
+        WHERE 1 = 0;
+
+        OPEN p_images FOR
+        SELECT CAST(NULL AS NVARCHAR2(300)) AS urlAnh
+        FROM dual
+        WHERE 1 = 0;
+END;
+/
 
 
 
