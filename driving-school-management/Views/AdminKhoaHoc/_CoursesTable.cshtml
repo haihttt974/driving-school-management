@@ -11,20 +11,22 @@
             <thead>
                 <tr>
                     <th style="width: 8%">STT</th>
-                    <th style="width: 32%">Tên khóa học</th>
+                    <th style="width: 30%">Tên khóa học</th>
                     <th style="width: 12%">Hạng</th>
                     <th style="width: 14%">Ngày bắt đầu</th>
                     <th style="width: 14%">Ngày kết thúc</th>
                     <th style="width: 12%">Trạng thái</th>
-                    <th style="width: 8%" class="text-center">Hành động</th>
+                    <th style="width: 10%" class="text-center">Hành động</th>
                 </tr>
             </thead>
+
             <tbody>
                 @if (Model != null && Model.Any())
                 {
                     foreach (var k in Model)
                     {
                         var statusClass = "status-ended";
+
                         if (k.TrangThai == "Sắp khai giảng")
                         {
                             statusClass = "status-upcoming";
@@ -40,7 +42,9 @@
                             </td>
 
                             <td>
-                                <div class="course-name">@k.TenKhoaHoc</div>
+                                <div class="course-name" title="@k.TenKhoaHoc">
+                                    @k.TenKhoaHoc
+                                </div>
                             </td>
 
                             <td>
@@ -61,12 +65,12 @@
 
                             <td class="text-center">
                                 <div class="action-group">
-                                    <a asp-action="Details"
-                                           asp-route-id="@k.KhoaHocId"
-                                           class="btn action-btn action-view"
-                                           title="Xem chi tiết">
+                                    <button type="button"
+                                            class="btn action-btn action-view btn-view-detail"
+                                            data-id="@k.KhoaHocId"
+                                            title="Xem chi tiết">
                                         <i class="fa fa-eye"></i>
-                                    </a>
+                                    </button>
 
                                     <a asp-action="Edit"
                                            asp-route-id="@k.KhoaHocId"
@@ -103,7 +107,7 @@
     <nav class="admin-pagination-nav mt-4">
         <ul class="pagination admin-pagination justify-content-center mb-0">
             <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                <a class="page-link page-btn" data-page="@(currentPage - 1)">
+                <a href="javascript:void(0)" class="page-link page-btn" data-page="@(currentPage - 1)">
                     <i class="fa fa-chevron-left"></i>
                 </a>
             </li>
@@ -117,7 +121,7 @@
             @if (start > 1)
             {
                 <li class="page-item">
-                    <a class="page-link page-btn" data-page="1">1</a>
+                    <a href="javascript:void(0)" class="page-link page-btn" data-page="1">1</a>
                 </li>
 
                 @if (start > 2)
@@ -131,7 +135,7 @@
             @for (int i = start; i <= end; i++)
             {
                 <li class="page-item @(i == currentPage ? "active" : "")">
-                    <a class="page-link page-btn" data-page="@i">@i</a>
+                    <a href="javascript:void(0)" class="page-link page-btn" data-page="@i">@i</a>
                 </li>
             }
 
@@ -145,12 +149,12 @@
                 }
 
                 <li class="page-item">
-                    <a class="page-link page-btn" data-page="@totalPages">@totalPages</a>
+                    <a href="javascript:void(0)" class="page-link page-btn" data-page="@totalPages">@totalPages</a>
                 </li>
             }
 
             <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                <a class="page-link page-btn" data-page="@(currentPage + 1)">
+                <a href="javascript:void(0)" class="page-link page-btn" data-page="@(currentPage + 1)">
                     <i class="fa fa-chevron-right"></i>
                 </a>
             </li>
@@ -166,36 +170,41 @@
         background: #fff;
     }
 
-    .admin-table thead th {
-        background: #f1f5f9;
-        color: #334155;
-        font-size: 14px;
-        font-weight: 700;
-        padding: 14px 16px;
-        border-bottom: 1px solid rgba(15,23,42,0.08);
-        white-space: nowrap;
+    .admin-table {
+        margin-bottom: 0;
     }
 
-    .admin-table tbody td {
-        padding: 16px;
-        border-bottom: 1px solid rgba(15,23,42,0.06);
-        vertical-align: middle;
-        color: #0f172a;
-        font-size: 14px;
-        font-weight: 500;
-    }
-
-    .admin-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .admin-table tbody tr {
-        transition: all .2s ease;
-    }
-
-        .admin-table tbody tr:hover {
-            background: #f8fafc;
+        .admin-table thead th {
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(15,23,42,0.08);
+            white-space: nowrap;
+            vertical-align: middle;
         }
+
+        .admin-table tbody td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(15,23,42,0.06);
+            vertical-align: middle;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .admin-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .admin-table tbody tr {
+            transition: all .2s ease;
+        }
+
+            .admin-table tbody tr:hover {
+                background: #f8fafc;
+            }
 
     .stt-badge {
         min-width: 34px;
@@ -214,6 +223,10 @@
         font-weight: 600;
         color: #0f172a;
         line-height: 1.5;
+        max-width: 320px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .hang-badge {
@@ -277,6 +290,7 @@
         border: 1px solid rgba(15,23,42,0.08);
         transition: all .2s ease;
         padding: 0;
+        box-shadow: none;
     }
 
         .action-btn:hover {
@@ -348,6 +362,8 @@
         background: #fff;
         transition: all .2s ease;
         box-shadow: none;
+        text-decoration: none;
+        cursor: pointer;
     }
 
     .admin-pagination .page-item.active .page-link {
@@ -365,6 +381,7 @@
     .admin-pagination .page-item.disabled .page-link {
         background: #f8fafc;
         color: #94a3b8;
+        pointer-events: none;
     }
 
     @@media (max-width: 991.98px) {
@@ -376,6 +393,10 @@
         .hang-badge,
         .status-badge {
             padding: 7px 12px;
+        }
+
+        .course-name {
+            max-width: 220px;
         }
     }
 </style>
