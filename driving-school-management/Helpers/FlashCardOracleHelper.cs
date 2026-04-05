@@ -46,13 +46,38 @@ namespace driving_school_management.Helpers
             FlashCardDetailVM? vm = null;
 
             using var conn = new OracleConnection(_connectionString);
-            using var cmd = new OracleCommand("GET_FLASHCARD_BY_SIGN", conn);
+            using var cmd = new OracleCommand("GET_FLASHCARD_DETAIL_BY_SIGN", conn);
 
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.Add("P_IDBIENBAO", OracleDbType.Int32).Value = idBienBao;
             cmd.Parameters.Add("P_CURSOR", OracleDbType.RefCursor).Direction = ParameterDirection.Output;
 
             conn.Open();
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                if (vm == null)
+                {
+                    vm = new FlashCardDetailVM
+                    {
+                        IdBienBao = Convert.ToInt32(reader["IDBIENBAO"]),
+                        TenBienBao = reader["TENBIENBAO"]?.ToString() ?? "",
+                        Ynghia = reader["YNGHIA"]?.ToString() ?? "",
+                        HinhAnh = reader["HINHANH"]?.ToString() ?? "",
+                        Items = new List<FlashCardItemVM>()
+                    };
+                }
+
+                vm.Items.Add(new FlashCardItemVM
+                {
+                    IdFlashcard = Convert.ToInt32(reader["IDFLASHCARD"]),
+                    DanhGia = reader["DANHGIA"]?.ToString() ?? "",
+                    UserId = Convert.ToInt32(reader["USERID"]),
+                    UserName = reader["USERNAME"]?.ToString() ?? ""
+                });
+            }
+
             return vm;
         }
     }

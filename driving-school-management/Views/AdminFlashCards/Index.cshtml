@@ -3,48 +3,334 @@
 @{
     ViewData["Title"] = "Quản lý Flashcard";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var stt = 1;
 }
 
-<div class="container-fluid">
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white border-0 pt-4 pb-3">
-            <h4 class="mb-0 fw-bold">Quản lý Flashcard</h4>
-        </div>
+<section class="content">
+    <div class="container-fluid admin-flashcard-page">
 
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Hình ảnh</th>
-                            <th>Tên biển báo</th>
-                            <th>Ý nghĩa</th>
-                            <th>Số flashcard</th>
-                            <th class="text-center">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td>@item.IdBienBao</td>
-                                <td>
-                                    <img src="@item.HinhAnh" alt="@item.TenBienBao" style="width:80px;height:80px;object-fit:contain;" />
-                                </td>
-                                <td>@item.TenBienBao</td>
-                                <td>@item.Ynghia</td>
-                                <td>@item.SoDanhGia</td>
-                                <td class="text-center">
-                                    <a asp-action="Details" asp-route-id="@item.IdBienBao" class="btn btn-primary btn-sm rounded-3">
-                                        Xem chi tiết
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+        <div class="page-header-card mb-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <div class="page-caption">Quản lý Flashcard</div>
+                    <h3 class="page-title mb-1">Danh sách biển báo có đánh giá ghi nhớ</h3>
+                    <div class="page-subtitle">Theo dõi số lượt đánh giá flashcard theo từng biển báo trong hệ thống.</div>
+                </div>
             </div>
         </div>
+
+        <div class="card admin-card border-0">
+            <div class="card-body p-3 p-lg-4">
+
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-warning rounded-3 mb-3">
+                        @TempData["Error"]
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table admin-flashcard-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 70px;">#</th>
+                                <th style="width: 150px;">Hình ảnh</th>
+                                <th style="width: 260px;">Tên biển báo</th>
+                                <th>Ý nghĩa</th>
+                                <th style="width: 140px;" class="text-center">Số đánh giá</th>
+                                <th style="width: 150px;" class="text-center">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var item in Model)
+                                {
+                                    var hasRating = item.SoDanhGia > 0;
+
+                                    <tr>
+                                        <td class="text-center fw-semibold">@stt</td>
+
+                                        <td class="text-center">
+                                            @if (!string.IsNullOrEmpty(item.HinhAnh))
+                                            {
+                                                <div class="sign-image-wrap">
+                                                    <img src="@Url.Content("~/" + item.HinhAnh.TrimStart('/'))"
+                                                         alt="@item.TenBienBao"
+                                                         class="sign-image" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="sign-empty-image">Chưa có ảnh</div>
+                                            }
+                                        </td>
+
+                                        <td>
+                                            <div class="sign-name">@item.TenBienBao</div>
+                                        </td>
+
+                                        <td>
+                                            <div class="sign-meaning">@item.Ynghia</div>
+                                        </td>
+
+                                        <td class="text-center">
+                                            <span class="rating-badge @(hasRating ? "rating-badge-active" : "rating-badge-inactive")">
+                                                @item.SoDanhGia
+                                            </span>
+                                        </td>
+
+                                        <td class="text-center">
+                                            @if (hasRating)
+                                            {
+                                                <a asp-action="Details"
+                                                       asp-route-id="@item.IdBienBao"
+                                                       class="status-action-btn status-action-btn-active">
+                                                    <i class="fas fa-eye"></i>
+                                                    <span>Xem</span>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="status-action-btn status-action-btn-inactive">
+                                                    <i class="fas fa-ban"></i>
+                                                    <span>Chưa có</span>
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+
+                                    stt++;
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        Chưa có dữ liệu flashcard.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
-</div>
+</section>
+
+@section Styles {
+    <style>
+        .admin-flashcard-page {
+            font-family: "Segoe UI", Roboto, sans-serif;
+            color: #0f172a;
+        }
+
+        .page-header-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92));
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 20px;
+            padding: 20px 24px;
+            box-shadow: 0 8px 18px rgba(15,23,42,0.05);
+        }
+
+        .page-caption {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: #2563eb;
+            margin-bottom: 6px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .page-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .admin-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 18px rgba(15,23,42,0.05);
+            border: 1px solid rgba(15,23,42,0.08);
+            overflow: hidden;
+        }
+
+        .admin-flashcard-table {
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+            .admin-flashcard-table thead th {
+                background: #f8fafc;
+                color: #0f172a;
+                font-size: 14px;
+                font-weight: 700;
+                text-align: center;
+                padding: 16px 14px;
+                border-bottom: 1px solid rgba(15,23,42,0.08);
+                white-space: nowrap;
+                vertical-align: middle;
+            }
+
+            .admin-flashcard-table tbody td {
+                padding: 14px 12px;
+                border-bottom: 1px solid rgba(15,23,42,0.08);
+                vertical-align: middle;
+                background: #fff;
+            }
+
+            .admin-flashcard-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .admin-flashcard-table tbody tr:hover td {
+                background: #f8fbff;
+            }
+
+        .sign-image-wrap {
+            width: 92px;
+            height: 92px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 12px;
+            background: #fff;
+            padding: 6px;
+        }
+
+        .sign-image {
+            width: 76px;
+            height: 76px;
+            object-fit: contain;
+        }
+
+        .sign-empty-image {
+            width: 92px;
+            height: 92px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed rgba(15,23,42,0.15);
+            border-radius: 12px;
+            background: #f8fafc;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .sign-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        .sign-meaning {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #1e293b;
+        }
+
+        .rating-badge {
+            min-width: 52px;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .rating-badge-active {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid rgba(37,99,235,0.14);
+        }
+
+        .rating-badge-inactive {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid rgba(100,116,139,0.15);
+        }
+
+        .status-action-btn {
+            min-width: 98px;
+            height: 36px;
+            border-radius: 10px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all .2s ease;
+            border: none;
+        }
+
+            .status-action-btn i {
+                font-size: 13px;
+            }
+
+        .status-action-btn-active {
+            background: #2563eb;
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(37,99,235,0.16);
+        }
+
+            .status-action-btn-active:hover {
+                background: #1d4ed8;
+                color: #fff;
+                transform: translateY(-1px);
+            }
+
+        .status-action-btn-inactive {
+            background: #e2e8f0;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        @@media (max-width: 991.98px) {
+            .page-header-card {
+                padding: 18px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .admin-flashcard-table thead th,
+            .admin-flashcard-table tbody td {
+                padding: 12px 10px;
+            }
+
+            .status-action-btn {
+                min-width: 88px;
+                font-size: 13px;
+            }
+
+            .rating-badge {
+                min-width: 46px;
+            }
+        }
+    </style>
+}
