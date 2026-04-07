@@ -817,7 +817,6 @@
                                     }
                                 </select>
                                 <span asp-validation-for="HangId" class="text-danger"></span>
-                                <div class="field-help">Nếu đã có hồ sơ còn hạn cùng hạng, hệ thống sẽ không cho tạo mới.</div>
                             </div>
 
                             <div class="field">
@@ -831,26 +830,22 @@
                             <div class="field full">
                                 <label class="field-label">Tên hồ sơ</label>
                                 <input type="text" class="input-ui input-readonly" id="TenHoSoPreview" value="" readonly />
-                                <div class="field-help">Tên hồ sơ được hiển thị tự động sau khi chọn hạng và sẽ được tạo lại đúng chuẩn khi lưu.</div>
                             </div>
 
                             <div class="field">
                                 <label class="field-label">Ngày đăng ký</label>
                                 <input type="text" class="input-ui input-readonly" value="@DateTime.Now.ToString("dd/MM/yyyy")" readonly />
-                                <div class="field-help">Ngày đăng ký mặc định là ngày hiện tại.</div>
                             </div>
 
                             <div class="field">
                                 <label class="field-label">Trạng thái khởi tạo</label>
                                 <input type="text" class="input-ui input-readonly" value="Đang xử lý" readonly />
-                                <div class="field-help">Hồ sơ mới tạo sẽ ở trạng thái xử lý.</div>
                             </div>
 
                             <div class="field full">
                                 <label class="field-label">Ghi chú</label>
                                 <textarea asp-for="GhiChu" class="textarea-ui" placeholder="Nhập ghi chú nếu cần..."></textarea>
                                 <span asp-validation-for="GhiChu" class="text-danger"></span>
-                                <div class="field-help">Để trống nếu không có ghi chú. Hệ thống sẽ lưu NULL.</div>
                             </div>
                         </div>
                     </div>
@@ -870,19 +865,16 @@
                             <div class="field">
                                 <label class="field-label">Ngày khám</label>
                                 <input type="date" class="input-ui" id="NgayKhamInput" />
-                                <div class="field-help">Dùng để tự tính thời hạn giấy khám sau 12 tháng.</div>
                             </div>
 
                             <div class="field">
                                 <label class="field-label">Hiệu lực</label>
                                 <input type="text" class="input-ui input-readonly" value="12 tháng" readonly />
-                                <div class="field-help">Giá trị này sẽ tự lưu dưới dạng chuỗi.</div>
                             </div>
 
                             <div class="field">
                                 <label class="field-label">Thời hạn sau khi lưu</label>
                                 <input type="text" class="input-ui input-readonly" id="ThoiHanPreview" value="" readonly />
-                                <div class="field-help">Tự động cộng 12 tháng từ ngày khám.</div>
                             </div>
                         </div>
 
@@ -891,14 +883,12 @@
                                 <label class="field-label">Khám mắt</label>
                                 <input type="number" class="input-ui" id="KhamMatInput" min="1" max="10" step="1" placeholder="Ví dụ: 10" />
                                 <span asp-validation-for="KhamMat" class="text-danger"></span>
-                                <div class="field-help">Nhập từ 1 đến 10. Khi lưu sẽ tự chuyển thành dạng <strong>x/10</strong>.</div>
                             </div>
 
                             <div class="field">
                                 <label class="field-label">Huyết áp</label>
                                 <input type="text" class="input-ui" id="HuyetApInput" placeholder="Ví dụ: 120/80" />
                                 <span asp-validation-for="HuyetAp" class="text-danger"></span>
-                                <div class="field-help">Khi lưu sẽ tự thêm hậu tố <strong>mmHg</strong>.</div>
                             </div>
 
                             <div class="field">
@@ -932,13 +922,9 @@
                                 <input asp-for="AnhGkskFiles" type="file" id="AnhGkskFilesInput" multiple accept="image/*" />
                                 <div class="dropzone-icon">⬆</div>
                                 <div class="dropzone-title">Chọn ảnh hoặc kéo thả vào đây</div>
-                                <div class="dropzone-subtitle">Hỗ trợ nhiều ảnh. Ảnh sẽ được lưu trong thư mục <strong>/images/healths/</strong>.</div>
                             </div>
 
                             <div id="uploadPreviewList" class="upload-preview-list"></div>
-                            <div class="upload-note" style="margin-top:12px; font-size:12px;">
-                                Có thể tải giấy khám sức khỏe đã điền sẵn hoặc tải ảnh giấy khám hiện có của học viên.
-                            </div>
                         </div>
                     </div>
 
