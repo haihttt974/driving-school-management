@@ -2,13 +2,14 @@
 
 @{
     ViewData["Title"] = "Xác nhận đăng ký kỳ thi";
+    var selectedKyThiId = ViewBag.SelectedKyThiId != null ? (int)ViewBag.SelectedKyThiId : 0;
 }
 
 <div class="confirm-page">
     <div class="page-top">
         <div>
             <h2 class="page-title">Xác nhận đăng ký kỳ thi</h2>
-            <p class="page-subtitle">Kiểm tra thông tin đăng ký trước khi chuyển sang bước thanh toán.</p>
+            <p class="page-subtitle">Kiểm tra thông tin trước khi xác nhận tạo đăng ký và phiếu thanh toán.</p>
         </div>
 
         <a asp-action="Index" class="btn btn-light btn-custom">
@@ -60,7 +61,7 @@
                             <div class="exam-item">
                                 <div class="exam-item-left">
                                     <div class="order-badge">@item.ThuTu</div>
-                                    <div>
+                                    <div class="exam-item-content">
                                         <div class="exam-item-name">@item.TenKyThi</div>
                                         <div class="exam-item-type">@item.LoaiKyThi</div>
                                     </div>
@@ -84,7 +85,7 @@
 
         <div class="right-column">
             <div class="card-custom summary-card">
-                <div class="section-title">Tóm tắt thanh toán</div>
+                <div class="section-title">Tóm tắt đăng ký</div>
 
                 <div class="summary-row">
                     <span>Lệ phí 1 kỳ thi</span>
@@ -129,6 +130,18 @@
                     </div>
 
                     <div class="condition-item">
+                        <span>Đã đậu tốt nghiệp</span>
+                        @if (Model.DauTotNghiep)
+                        {
+                            <span class="badge-soft badge-success-soft">Đã đậu</span>
+                        }
+                        else
+                        {
+                            <span class="badge-soft badge-neutral">Chưa</span>
+                        }
+                    </div>
+
+                    <div class="condition-item">
                         <span>Đã hoàn thành toàn bộ</span>
                         @if (Model.DaHoanThanh)
                         {
@@ -142,14 +155,18 @@
                 </div>
 
                 <div class="note-box">
-                    Sau bước này sẽ chuyển sang trang chọn phương thức thanh toán và xác nhận thanh toán.
+                    Khi xác nhận, hệ thống sẽ tạo đăng ký thi và phiếu thanh toán tương ứng theo đúng trạng thái hiện tại.
                 </div>
 
                 <div class="action-group">
-                    <button type="button" class="btn btn-primary btn-custom btn-full" disabled>
-                        <i class="bi bi-credit-card"></i>
-                        <span>Tiếp tục đến thanh toán</span>
-                    </button>
+                    <form asp-action="Register" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="kyThiId" value="@selectedKyThiId" />
+                        <button type="submit" class="btn btn-primary btn-custom btn-full">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Xác nhận đăng ký</span>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -257,6 +274,10 @@
         align-items: flex-start;
         gap: 12px;
         margin-bottom: 10px;
+    }
+
+    .exam-item-content {
+        min-width: 0;
     }
 
     .order-badge {

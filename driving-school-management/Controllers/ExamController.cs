@@ -1,7 +1,6 @@
 ﻿using driving_school_management.Models.DTOs;
 using driving_school_management.Services;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace driving_school_management.Controllers
 {
@@ -16,16 +15,6 @@ namespace driving_school_management.Controllers
 
         private int? GetCurrentUserId()
         {
-            //var userIdClaim = User.FindFirst("userId")?.Value
-            //                  ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            //if (string.IsNullOrWhiteSpace(userIdClaim))
-            //    return null;
-
-            //if (int.TryParse(userIdClaim, out var userId))
-            //    return userId;
-
-            //return null;
             return HttpContext.Session.GetInt32("UserId");
         }
 
@@ -43,7 +32,7 @@ namespace driving_school_management.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = ex.Message;
+                TempData["Error"] = ex.ToString();
                 return View(new List<UserExamDto>());
             }
         }
@@ -66,8 +55,29 @@ namespace driving_school_management.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = ex.Message;
+                TempData["Error"] = ex.ToString();
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(int kyThiId)
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+                return RedirectToAction("Login", "Auth");
+
+            try
+            {
+                await _service.DangKyKyThiUserAsync(userId.Value, kyThiId);
+                TempData["Success"] = "Đăng ký kỳ thi thành công.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.ToString();
+                return RedirectToAction(nameof(ConfirmRegister), new { kyThiId });
             }
         }
     }
