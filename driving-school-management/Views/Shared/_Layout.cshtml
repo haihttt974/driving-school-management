@@ -576,6 +576,12 @@
            asp-controller="ThiThu" asp-action="Index">
             Thi thử
         </a>
+        
+        <!-- Kỳ thi -->
+        <a class="menu-item @(currentController == "Exam" ? "menu-active" : "")"
+           asp-controller="Exam" asp-action="Index">
+            Kỳ thi
+        </a>
 
         <!-- Kết quả -->
         <a class="menu-item @(currentController == "KetQua" ? "menu-active" : "")"

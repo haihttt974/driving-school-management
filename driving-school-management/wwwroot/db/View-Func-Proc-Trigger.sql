@@ -377,6 +377,21 @@ CREATE OR REPLACE PACKAGE PKG_KYTHI AS
         p_nam NUMBER
     );
 
+    PROCEDURE GET_KYTHI_FOR_USER(
+        p_userId NUMBER,
+        p_cursor OUT SYS_REFCURSOR
+    );
+
+    PROCEDURE DANGKY_KYTHI_USER(
+        p_userId NUMBER,
+        p_kyThiId NUMBER
+    );
+
+    PROCEDURE GET_CONFIRM_DANGKY_INFO(
+        p_userId NUMBER,
+        p_kyThiId NUMBER,
+        p_cursor OUT SYS_REFCURSOR
+    );
 END PKG_KYTHI;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_KYTHI AS
@@ -718,84 +733,604 @@ CREATE OR REPLACE PACKAGE BODY PKG_KYTHI AS
             RAISE_APPLICATION_ERROR(-20007, 'Khong tim thay cap ky thi can sua');
         END IF;
     END;
+
+    PROCEDURE GET_KYTHI_FOR_USER(
+        p_userId NUMBER,
+        p_cursor OUT SYS_REFCURSOR
+    )
+    IS
+    BEGIN
+        OPEN p_cursor FOR
+        WITH HV AS
+        (
+            SELECT hv.hocVienId, hv.hoTen
+            FROM HocVien hv
+            WHERE hv.userId = p_userId
+        ),
+        HS AS
+        (
+            SELECT
+                hs.hoSoId,
+                hs.hocVienId,
+                hs.hangId,
+                hg.maHang,
+                hg.tenHang,
+                hg.hocPhi
+            FROM HoSoThiSinh hs
+            JOIN HangGplx hg ON hg.hangId = hs.hangId
+            JOIN HV ON HV.hocVienId = hs.hocVienId
+        ),
+        KQ_HOPLE AS
+        (
+            SELECT *
+            FROM
+            (
+                SELECT
+                    hs.hoSoId,
+                    hs.hangId,
+                    kq.ketQuaHocTapId,
+                    NVL(kq.DU_DK_THITOTNGHIEP, 0) AS duDKTotNghiep,
+                    NVL(kq.DAUTOTNGHIEP, 0) AS dauTotNghiep,
+                    NVL(kq.DU_DK_THISATHACH, 0) AS duDKSatHach,
+                    NVL(ct.lyThuyetKq, 0) AS lyThuyetKq,
+                    NVL(ct.saHinhKq, 0) AS saHinhKq,
+                    NVL(ct.duongTruongKq, 0) AS duongTruongKq,
+                    NVL(ct.moPhongKq, 0) AS moPhongKq,
+                    ROW_NUMBER() OVER
+                    (
+                        PARTITION BY hs.hoSoId, hs.hangId
+                        ORDER BY NVL(kq.THOIGIANCAPNHAT, DATE '1900-01-01') DESC, kq.ketQuaHocTapId DESC
+                    ) AS rn
+                FROM HS hs
+                JOIN KetQuaHocTap kq
+                    ON kq.hoSoId = hs.hoSoId
+                JOIN ChiTietKetQuaHocTap ct
+                    ON ct.ketQuaHocTapId = kq.ketQuaHocTapId
+                JOIN KhoaHoc kh
+                    ON kh.khoaHocId = ct.khoaHocId
+                   AND kh.hangId = hs.hangId
+            )
+            WHERE rn = 1
+        )
+        SELECT
+            kt.kyThiId,
+            kt.tenKyThi,
+            kt.loaiKyThi,
+            hs.hoSoId,
+            hs.hangId,
+            hs.maHang,
+            hs.tenHang,
+            hs.hocPhi,
+            NVL(kq.duDKTotNghiep, 0) AS duDKTotNghiep,
+            NVL(kq.duDKSatHach, 0) AS duDKSatHach,
+            NVL(kq.dauTotNghiep, 0) AS dauTotNghiep,
+            CASE
+                WHEN hs.maHang IN (N'A', N'A1')
+                     AND NVL(kq.duDKSatHach, 0) = 1
+                     AND NVL(kq.lyThuyetKq, 0) = 1
+                     AND NVL(kq.saHinhKq, 0) = 1
+                THEN 1
+                WHEN hs.maHang NOT IN (N'A', N'A1')
+                     AND NVL(kq.duDKSatHach, 0) = 1
+                     AND NVL(kq.lyThuyetKq, 0) = 1
+                     AND NVL(kq.saHinhKq, 0) = 1
+                     AND NVL(kq.duongTruongKq, 0) = 1
+                     AND NVL(kq.moPhongKq, 0) = 1
+                THEN 1
+                ELSE 0
+            END AS daHoanThanh,
+            CASE
+                WHEN (
+                    CASE
+                        WHEN hs.maHang IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                        THEN 1
+                        WHEN hs.maHang NOT IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                             AND NVL(kq.duongTruongKq, 0) = 1
+                             AND NVL(kq.moPhongKq, 0) = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) = 1 THEN 0
+                WHEN NVL(kq.duDKTotNghiep, 0) = 0 THEN 0
+                ELSE 1
+            END AS coTheDangKy,
+            CASE
+                WHEN (
+                    CASE
+                        WHEN hs.maHang IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                        THEN 1
+                        WHEN hs.maHang NOT IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                             AND NVL(kq.duongTruongKq, 0) = 1
+                             AND NVL(kq.moPhongKq, 0) = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) = 1 THEN 0
+                WHEN NVL(kq.duDKTotNghiep, 0) = 0 THEN 0
+                WHEN NVL(kq.duDKSatHach, 0) = 1 THEN 1
+                ELSE 2
+            END AS soKyThiDangKy,
+            CASE
+                WHEN (
+                    CASE
+                        WHEN hs.maHang IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                        THEN 1
+                        WHEN hs.maHang NOT IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                             AND NVL(kq.duongTruongKq, 0) = 1
+                             AND NVL(kq.moPhongKq, 0) = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) = 1 THEN 0
+                WHEN NVL(kq.duDKSatHach, 0) = 1 THEN hs.hocPhi / 3
+                ELSE (hs.hocPhi / 3) * 2
+            END AS tongPhiDuKien,
+            CASE
+                WHEN (
+                    CASE
+                        WHEN hs.maHang IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                        THEN 1
+                        WHEN hs.maHang NOT IN (N'A', N'A1')
+                             AND NVL(kq.duDKSatHach, 0) = 1
+                             AND NVL(kq.lyThuyetKq, 0) = 1
+                             AND NVL(kq.saHinhKq, 0) = 1
+                             AND NVL(kq.duongTruongKq, 0) = 1
+                             AND NVL(kq.moPhongKq, 0) = 1
+                        THEN 1
+                        ELSE 0
+                    END
+                ) = 1 THEN N'Bạn đã hoàn thành toàn bộ kỳ thi của hạng này, chỉ cần chờ cấp bằng.'
+                WHEN NVL(kq.duDKTotNghiep, 0) = 0 THEN N'Bạn chưa đủ điều kiện đăng ký kỳ thi. Cần hoàn thành khóa học trước.'
+                WHEN NVL(kq.duDKSatHach, 0) = 1 THEN N'Bạn đã đủ điều kiện thi sát hạch. Khi đăng ký sẽ chỉ đăng ký kỳ sát hạch.'
+                ELSE N'Bạn đủ điều kiện thi tốt nghiệp. Khi đăng ký sẽ đăng ký cả kỳ tốt nghiệp và sát hạch.'
+            END AS canhBao
+        FROM KyThi kt
+        JOIN HS
+            ON hs.maHang = REGEXP_SUBSTR(kt.tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1)
+        LEFT JOIN KQ_HOPLE kq
+            ON kq.hoSoId = hs.hoSoId
+           AND kq.hangId = hs.hangId
+        ORDER BY kt.kyThiId DESC;
+    END;
+    
+    PROCEDURE DANGKY_KYTHI_USER(
+        p_userId NUMBER,
+        p_kyThiId NUMBER
+    )
+    IS
+        v_hocVienId NUMBER;
+        v_hoTen NVARCHAR2(100);
+        v_hoSoId NUMBER;
+        v_hangId NUMBER;
+        v_maHang NVARCHAR2(20);
+        v_hocPhi NUMBER;
+    
+        v_duDKTot NUMBER := 0;
+        v_duDKSat NUMBER := 0;
+        v_dauTN NUMBER := 0;
+    
+        v_lyThuyetKq NUMBER := 0;
+        v_saHinhKq NUMBER := 0;
+        v_duongTruongKq NUMBER := 0;
+        v_moPhongKq NUMBER := 0;
+    
+        v_daHoanThanh NUMBER := 0;
+    
+        v_kyThiTot NUMBER;
+        v_kyThiSat NUMBER;
+    
+        v_tenTot NVARCHAR2(255);
+        v_tenSat NVARCHAR2(255);
+    
+        v_phi NUMBER;
+        v_phieuId NUMBER;
+    BEGIN
+        SELECT hocVienId, hoTen
+        INTO v_hocVienId, v_hoTen
+        FROM HocVien
+        WHERE userId = p_userId;
+    
+        SELECT REGEXP_SUBSTR(tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1)
+        INTO v_maHang
+        FROM KyThi
+        WHERE kyThiId = p_kyThiId;
+    
+        SELECT hs.hoSoId, hs.hangId, hg.hocPhi
+        INTO v_hoSoId, v_hangId, v_hocPhi
+        FROM HoSoThiSinh hs
+        JOIN HangGplx hg ON hg.hangId = hs.hangId
+        WHERE hs.hocVienId = v_hocVienId
+          AND hg.maHang = v_maHang
+          AND ROWNUM = 1;
+    
+        BEGIN
+            SELECT
+                x.duDKTotNghiep,
+                x.duDKSatHach,
+                x.dauTotNghiep,
+                x.lyThuyetKq,
+                x.saHinhKq,
+                x.duongTruongKq,
+                x.moPhongKq
+            INTO
+                v_duDKTot,
+                v_duDKSat,
+                v_dauTN,
+                v_lyThuyetKq,
+                v_saHinhKq,
+                v_duongTruongKq,
+                v_moPhongKq
+            FROM
+            (
+                SELECT
+                    NVL(kq.DU_DK_THITOTNGHIEP, 0) AS duDKTotNghiep,
+                    NVL(kq.DU_DK_THISATHACH, 0) AS duDKSatHach,
+                    NVL(kq.DAUTOTNGHIEP, 0) AS dauTotNghiep,
+                    NVL(ct.lyThuyetKq, 0) AS lyThuyetKq,
+                    NVL(ct.saHinhKq, 0) AS saHinhKq,
+                    NVL(ct.duongTruongKq, 0) AS duongTruongKq,
+                    NVL(ct.moPhongKq, 0) AS moPhongKq,
+                    ROW_NUMBER() OVER
+                    (
+                        ORDER BY NVL(kq.THOIGIANCAPNHAT, DATE '1900-01-01') DESC, kq.ketQuaHocTapId DESC
+                    ) AS rn
+                FROM KetQuaHocTap kq
+                JOIN ChiTietKetQuaHocTap ct
+                    ON ct.ketQuaHocTapId = kq.ketQuaHocTapId
+                JOIN KhoaHoc kh
+                    ON kh.khoaHocId = ct.khoaHocId
+                   AND kh.hangId = v_hangId
+                WHERE kq.hoSoId = v_hoSoId
+            ) x
+            WHERE x.rn = 1;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                v_duDKTot := 0;
+                v_duDKSat := 0;
+                v_dauTN := 0;
+                v_lyThuyetKq := 0;
+                v_saHinhKq := 0;
+                v_duongTruongKq := 0;
+                v_moPhongKq := 0;
+        END;
+    
+        IF v_maHang IN (N'A', N'A1') THEN
+            IF v_duDKSat = 1
+               AND v_lyThuyetKq = 1
+               AND v_saHinhKq = 1 THEN
+                v_daHoanThanh := 1;
+            END IF;
+        ELSE
+            IF v_duDKSat = 1
+               AND v_lyThuyetKq = 1
+               AND v_saHinhKq = 1
+               AND v_duongTruongKq = 1
+               AND v_moPhongKq = 1 THEN
+                v_daHoanThanh := 1;
+            END IF;
+        END IF;
+    
+        IF v_daHoanThanh = 1 THEN
+            RAISE_APPLICATION_ERROR(-20020, 'Da hoan thanh ky thi');
+        END IF;
+    
+        IF v_duDKTot = 0 THEN
+            RAISE_APPLICATION_ERROR(-20021, 'Chua du dieu kien thi tot nghiep');
+        END IF;
+    
+        SELECT kyThiId, tenKyThi
+        INTO v_kyThiTot, v_tenTot
+        FROM KyThi
+        WHERE REGEXP_SUBSTR(tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1) = v_maHang
+          AND loaiKyThi = N'Tốt nghiệp'
+          AND ROWNUM = 1;
+    
+        SELECT kyThiId, tenKyThi
+        INTO v_kyThiSat, v_tenSat
+        FROM KyThi
+        WHERE REGEXP_SUBSTR(tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1) = v_maHang
+          AND loaiKyThi = N'Sát hạch'
+          AND ROWNUM = 1;
+    
+        v_phi := v_hocPhi / 3;
+    
+        IF v_duDKSat = 1 THEN
+            INSERT INTO ChiTietDangKyThi(kyThiId, hoSoId, thoiGianDangKy, lichThiId)
+            VALUES (v_kyThiSat, v_hoSoId, SYSTIMESTAMP, NULL);
+    
+            INSERT INTO PhieuThanhToan(tenPhieu, ngayLap, tongTien)
+            VALUES (v_tenSat || ' _ ' || v_hoTen, SYSTIMESTAMP, v_phi)
+            RETURNING phieuId INTO v_phieuId;
+    
+            INSERT INTO ChiTietPhieuThanhToan(hoSoId, phieuId, loaiPhi, ghiChu, ketQuaHocTapId)
+            VALUES (v_hoSoId, v_phieuId, N'Lệ phí thi', NULL, NULL);
+        ELSE
+            INSERT INTO ChiTietDangKyThi(kyThiId, hoSoId, thoiGianDangKy, lichThiId)
+            VALUES (v_kyThiTot, v_hoSoId, SYSTIMESTAMP, NULL);
+    
+            INSERT INTO ChiTietDangKyThi(kyThiId, hoSoId, thoiGianDangKy, lichThiId)
+            VALUES (v_kyThiSat, v_hoSoId, SYSTIMESTAMP, NULL);
+    
+            INSERT INTO PhieuThanhToan(tenPhieu, ngayLap, tongTien)
+            VALUES (v_tenTot || ' _ ' || v_hoTen, SYSTIMESTAMP, v_phi)
+            RETURNING phieuId INTO v_phieuId;
+    
+            INSERT INTO ChiTietPhieuThanhToan(hoSoId, phieuId, loaiPhi, ghiChu, ketQuaHocTapId)
+            VALUES (v_hoSoId, v_phieuId, N'Lệ phí thi', NULL, NULL);
+    
+            INSERT INTO PhieuThanhToan(tenPhieu, ngayLap, tongTien)
+            VALUES (v_tenSat || ' _ ' || v_hoTen, SYSTIMESTAMP, v_phi)
+            RETURNING phieuId INTO v_phieuId;
+    
+            INSERT INTO ChiTietPhieuThanhToan(hoSoId, phieuId, loaiPhi, ghiChu, ketQuaHocTapId)
+            VALUES (v_hoSoId, v_phieuId, N'Lệ phí thi', NULL, NULL);
+        END IF;
+    END;
+
+    PROCEDURE GET_CONFIRM_DANGKY_INFO(
+        p_userId NUMBER,
+        p_kyThiId NUMBER,
+        p_cursor OUT SYS_REFCURSOR
+    )
+    IS
+        v_hocVienId NUMBER;
+        v_hoTen HocVien.hoTen%TYPE;
+    
+        v_hoSoId NUMBER;
+        v_hangId NUMBER;
+        v_maHang HangGplx.maHang%TYPE;
+        v_tenHang HangGplx.tenHang%TYPE;
+        v_hocPhi HangGplx.hocPhi%TYPE;
+    
+        v_duDKTot NUMBER := 0;
+        v_duDKSat NUMBER := 0;
+        v_dauTot NUMBER := 0;
+    
+        v_lyThuyetKq NUMBER := 0;
+        v_saHinhKq NUMBER := 0;
+        v_duongTruongKq NUMBER := 0;
+        v_moPhongKq NUMBER := 0;
+    
+        v_daHoanThanh NUMBER := 0;
+    
+        v_dot NUMBER;
+        v_nam NUMBER;
+    
+        v_kyThiTotId NUMBER;
+        v_kyThiSatId NUMBER;
+        v_tenKyThiTot KyThi.tenKyThi%TYPE;
+        v_tenKyThiSat KyThi.tenKyThi%TYPE;
+    
+        v_lePhiMotKy NUMBER;
+        v_tongPhi NUMBER;
+    BEGIN
+        SELECT hv.hocVienId, hv.hoTen
+        INTO v_hocVienId, v_hoTen
+        FROM HocVien hv
+        WHERE hv.userId = p_userId;
+    
+        SELECT
+            REGEXP_SUBSTR(kt.tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1),
+            TO_NUMBER(REGEXP_SUBSTR(kt.tenKyThi, 'đợt ([0-9]+)', 1, 1, NULL, 1)),
+            TO_NUMBER(REGEXP_SUBSTR(kt.tenKyThi, 'năm ([0-9]+)', 1, 1, NULL, 1))
+        INTO
+            v_maHang,
+            v_dot,
+            v_nam
+        FROM KyThi kt
+        WHERE kt.kyThiId = p_kyThiId;
+    
+        SELECT
+            hs.hoSoId,
+            hs.hangId,
+            hg.tenHang,
+            hg.hocPhi
+        INTO
+            v_hoSoId,
+            v_hangId,
+            v_tenHang,
+            v_hocPhi
+        FROM HoSoThiSinh hs
+        JOIN HangGplx hg ON hg.hangId = hs.hangId
+        WHERE hs.hocVienId = v_hocVienId
+          AND hg.maHang = v_maHang
+          AND ROWNUM = 1;
+    
+        BEGIN
+            SELECT
+                x.duDKTotNghiep,
+                x.duDKSatHach,
+                x.dauTotNghiep,
+                x.lyThuyetKq,
+                x.saHinhKq,
+                x.duongTruongKq,
+                x.moPhongKq
+            INTO
+                v_duDKTot,
+                v_duDKSat,
+                v_dauTot,
+                v_lyThuyetKq,
+                v_saHinhKq,
+                v_duongTruongKq,
+                v_moPhongKq
+            FROM
+            (
+                SELECT
+                    NVL(kq.DU_DK_THITOTNGHIEP, 0) AS duDKTotNghiep,
+                    NVL(kq.DU_DK_THISATHACH, 0) AS duDKSatHach,
+                    NVL(kq.DAUTOTNGHIEP, 0) AS dauTotNghiep,
+                    NVL(ct.lyThuyetKq, 0) AS lyThuyetKq,
+                    NVL(ct.saHinhKq, 0) AS saHinhKq,
+                    NVL(ct.duongTruongKq, 0) AS duongTruongKq,
+                    NVL(ct.moPhongKq, 0) AS moPhongKq,
+                    ROW_NUMBER() OVER
+                    (
+                        ORDER BY NVL(kq.THOIGIANCAPNHAT, DATE '1900-01-01') DESC, kq.ketQuaHocTapId DESC
+                    ) AS rn
+                FROM KetQuaHocTap kq
+                JOIN ChiTietKetQuaHocTap ct
+                    ON ct.ketQuaHocTapId = kq.ketQuaHocTapId
+                JOIN KhoaHoc kh
+                    ON kh.khoaHocId = ct.khoaHocId
+                   AND kh.hangId = v_hangId
+                WHERE kq.hoSoId = v_hoSoId
+            ) x
+            WHERE x.rn = 1;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                v_duDKTot := 0;
+                v_duDKSat := 0;
+                v_dauTot := 0;
+                v_lyThuyetKq := 0;
+                v_saHinhKq := 0;
+                v_duongTruongKq := 0;
+                v_moPhongKq := 0;
+        END;
+    
+        IF v_maHang IN (N'A', N'A1') THEN
+            IF v_duDKSat = 1
+               AND v_lyThuyetKq = 1
+               AND v_saHinhKq = 1 THEN
+                v_daHoanThanh := 1;
+            END IF;
+        ELSE
+            IF v_duDKSat = 1
+               AND v_lyThuyetKq = 1
+               AND v_saHinhKq = 1
+               AND v_duongTruongKq = 1
+               AND v_moPhongKq = 1 THEN
+                v_daHoanThanh := 1;
+            END IF;
+        END IF;
+    
+        IF v_daHoanThanh = 1 THEN
+            RAISE_APPLICATION_ERROR(-20030, 'Ban da hoan thanh toan bo ky thi cua hang nay');
+        END IF;
+    
+        IF v_duDKTot = 0 THEN
+            RAISE_APPLICATION_ERROR(-20031, 'Ban chua du dieu kien dang ky ky thi');
+        END IF;
+    
+        SELECT kyThiId, tenKyThi
+        INTO v_kyThiTotId, v_tenKyThiTot
+        FROM KyThi
+        WHERE REGEXP_SUBSTR(tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1) = v_maHang
+          AND TO_NUMBER(REGEXP_SUBSTR(tenKyThi, 'đợt ([0-9]+)', 1, 1, NULL, 1)) = v_dot
+          AND TO_NUMBER(REGEXP_SUBSTR(tenKyThi, 'năm ([0-9]+)', 1, 1, NULL, 1)) = v_nam
+          AND loaiKyThi = N'Tốt nghiệp'
+          AND ROWNUM = 1;
+    
+        SELECT kyThiId, tenKyThi
+        INTO v_kyThiSatId, v_tenKyThiSat
+        FROM KyThi
+        WHERE REGEXP_SUBSTR(tenKyThi, '\(([^)]+)\)$', 1, 1, NULL, 1) = v_maHang
+          AND TO_NUMBER(REGEXP_SUBSTR(tenKyThi, 'đợt ([0-9]+)', 1, 1, NULL, 1)) = v_dot
+          AND TO_NUMBER(REGEXP_SUBSTR(tenKyThi, 'năm ([0-9]+)', 1, 1, NULL, 1)) = v_nam
+          AND loaiKyThi = N'Sát hạch'
+          AND ROWNUM = 1;
+    
+        v_lePhiMotKy := v_hocPhi / 3;
+    
+        IF v_duDKSat = 1 THEN
+            v_tongPhi := v_lePhiMotKy;
+        ELSE
+            v_tongPhi := v_lePhiMotKy * 2;
+        END IF;
+    
+        OPEN p_cursor FOR
+            SELECT
+                v_hoTen AS hoTen,
+                v_hoSoId AS hoSoId,
+                v_hangId AS hangId,
+                v_maHang AS maHang,
+                v_tenHang AS tenHang,
+                v_hocPhi AS hocPhi,
+                v_lePhiMotKy AS lePhiMotKy,
+                v_tongPhi AS tongPhi,
+                v_duDKTot AS duDKTotNghiep,
+                v_duDKSat AS duDKSatHach,
+                v_dauTot AS dauTotNghiep,
+                v_daHoanThanh AS daHoanThanh,
+                1 AS thuTu,
+                v_kyThiSatId AS kyThiId,
+                v_tenKyThiSat AS tenKyThi,
+                N'Sát hạch' AS loaiKyThi,
+                N'Đủ điều kiện thi sát hạch, chỉ cần đăng ký 1 kỳ thi sát hạch.' AS ghiChu
+            FROM dual
+            WHERE v_duDKSat = 1
+    
+            UNION ALL
+    
+            SELECT
+                v_hoTen AS hoTen,
+                v_hoSoId AS hoSoId,
+                v_hangId AS hangId,
+                v_maHang AS maHang,
+                v_tenHang AS tenHang,
+                v_hocPhi AS hocPhi,
+                v_lePhiMotKy AS lePhiMotKy,
+                v_tongPhi AS tongPhi,
+                v_duDKTot AS duDKTotNghiep,
+                v_duDKSat AS duDKSatHach,
+                v_dauTot AS dauTotNghiep,
+                v_daHoanThanh AS daHoanThanh,
+                1 AS thuTu,
+                v_kyThiTotId AS kyThiId,
+                v_tenKyThiTot AS tenKyThi,
+                N'Tốt nghiệp' AS loaiKyThi,
+                N'Bạn đang đăng ký kỳ thi tốt nghiệp.' AS ghiChu
+            FROM dual
+            WHERE v_duDKSat = 0
+    
+            UNION ALL
+    
+            SELECT
+                v_hoTen AS hoTen,
+                v_hoSoId AS hoSoId,
+                v_hangId AS hangId,
+                v_maHang AS maHang,
+                v_tenHang AS tenHang,
+                v_hocPhi AS hocPhi,
+                v_lePhiMotKy AS lePhiMotKy,
+                v_tongPhi AS tongPhi,
+                v_duDKTot AS duDKTotNghiep,
+                v_duDKSat AS duDKSatHach,
+                v_dauTot AS dauTotNghiep,
+                v_daHoanThanh AS daHoanThanh,
+                2 AS thuTu,
+                v_kyThiSatId AS kyThiId,
+                v_tenKyThiSat AS tenKyThi,
+                N'Sát hạch' AS loaiKyThi,
+                N'Kỳ sát hạch sẽ được đăng ký cùng lúc để chờ đủ điều kiện thi sau khi đạt tốt nghiệp.' AS ghiChu
+            FROM dual
+            WHERE v_duDKSat = 0
+    
+            ORDER BY thuTu;
+    END;
+
 END PKG_KYTHI;
 /
---CREATE OR REPLACE PROCEDURE SP_CREATE_KYTHI
---(
---    p_tenKyThi   KyThi.tenKyThi%TYPE,
---    p_loaiKyThi  KyThi.loaiKyThi%TYPE
---)
---AS
---BEGIN
---    INSERT INTO KyThi (tenKyThi, loaiKyThi)
---    VALUES (p_tenKyThi, p_loaiKyThi);
---END;
---/
---
---CREATE OR REPLACE PROCEDURE SP_UPDATE_KYTHI
---(
---    p_kyThiId NUMBER,
---    p_tenKyThi NVARCHAR2,
---    p_loaiKyThi NVARCHAR2
---)
---AS
---BEGIN
---    UPDATE KyThi
---    SET 
---        tenKyThi = p_tenKyThi,
---        loaiKyThi = p_loaiKyThi
---    WHERE kyThiId = p_kyThiId;
---END;
---/
---CREATE OR REPLACE PROCEDURE SP_DELETE_KYTHI
---(
---    p_kyThiId NUMBER
---)
---AS
---BEGIN
---    DELETE FROM KyThi
---    WHERE kyThiId = p_kyThiId;
---END;
---/
---CREATE OR REPLACE PROCEDURE SP_GET_KYTHI
---(
---    p_cursor OUT SYS_REFCURSOR
---)
---AS
---BEGIN
---    OPEN p_cursor FOR
---    SELECT * FROM VW_KYTHI_ADMIN
---    ORDER BY kyThiId DESC;
---END;
---/
---CREATE OR REPLACE PROCEDURE SP_CREATE_LICHTHI
---(
---    p_kyThiId NUMBER,
---    p_thoiGianThi TIMESTAMP,
---    p_diaDiem NVARCHAR2
---)
---AS
---BEGIN
---    INSERT INTO LichThi (kyThiId, thoiGianThi, diaDiem)
---    VALUES (p_kyThiId, p_thoiGianThi, p_diaDiem);
---END;
---/
---CREATE OR REPLACE PROCEDURE SP_GET_LICHTHI_BY_KYTHI
---(
---    p_kyThiId NUMBER,
---    p_cursor OUT SYS_REFCURSOR
---)
---AS
---BEGIN
---    OPEN p_cursor FOR
---    SELECT *
---    FROM LichThi
---    WHERE kyThiId = p_kyThiId
---    ORDER BY thoiGianThi;
---END;
---/
-
-
 
 -- ============================================================
 -- ====================        USER        ====================
@@ -921,30 +1456,7 @@ BEGIN
         END;
 END;
 /
-CREATE OR REPLACE PACKAGE pkg_khoahoc AS
-    PROCEDURE CAP_NHAT_TRANG_THAI;
-END pkg_khoahoc;
-/
-CREATE OR REPLACE PACKAGE BODY pkg_khoahoc AS
 
-    PROCEDURE CAP_NHAT_TRANG_THAI IS
-    BEGIN
-        UPDATE KhoaHoc
-        SET trangThai =
-            CASE
-                WHEN TRUNC(SYSDATE) < TRUNC(ngayBatDau)
-                    THEN N'Sắp khai giảng'
-                WHEN TRUNC(SYSDATE) BETWEEN TRUNC(ngayBatDau) AND TRUNC(ngayKetThuc)
-                    THEN N'Đang học'
-                WHEN TRUNC(SYSDATE) > TRUNC(ngayKetThuc)
-                    THEN N'Đã kết thúc'
-            END;
-
-        COMMIT;
-    END CAP_NHAT_TRANG_THAI;
-
-END pkg_khoahoc;
-/
 CREATE OR REPLACE PROCEDURE sp_GetKhoaHocDangMo (
     p_cursor OUT SYS_REFCURSOR
 )
@@ -4284,6 +4796,9 @@ AS
         p_khoaHocId IN NUMBER,
         p_cursor    OUT SYS_REFCURSOR
     );
+    
+    PROCEDURE CAP_NHAT_TRANG_THAI;
+    
 END PKG_KHOAHOC;
 /
 CREATE OR REPLACE PACKAGE BODY PKG_KHOAHOC
@@ -4720,6 +5235,22 @@ AS
             LEFT JOIN DANG_TRUNG_THOI_GIAN dttg ON 1 = 1
             LEFT JOIN DA_DANG_KY_CUNG_HANG ddkch ON 1 = 1;
     END SP_CHECK_DANGKY;
+
+    PROCEDURE CAP_NHAT_TRANG_THAI IS
+        BEGIN
+            UPDATE KhoaHoc
+            SET trangThai =
+                CASE
+                    WHEN TRUNC(SYSDATE) < TRUNC(ngayBatDau)
+                        THEN N'Sắp khai giảng'
+                    WHEN TRUNC(SYSDATE) BETWEEN TRUNC(ngayBatDau) AND TRUNC(ngayKetThuc)
+                        THEN N'Đang học'
+                    WHEN TRUNC(SYSDATE) > TRUNC(ngayKetThuc)
+                        THEN N'Đã kết thúc'
+                END;
+    
+            COMMIT;
+        END CAP_NHAT_TRANG_THAI;
 END PKG_KHOAHOC;
 /
 -- ==================================================
@@ -4954,150 +5485,7 @@ JOIN HS
 LEFT JOIN KQHT kq ON kq.hoSoId = hs.hoSoId
 LEFT JOIN CTKQHT ct ON ct.ketQuaHocTapId = kq.ketQuaHocTapId;
 /
-CREATE OR REPLACE PROCEDURE GET_KYTHI_FOR_USER(
-    p_userId NUMBER,
-    p_cursor OUT SYS_REFCURSOR
-)
-IS
-BEGIN
-    OPEN p_cursor FOR
-    SELECT *
-    FROM VW_USER_KYTHI v
-    JOIN HocVien hv ON hv.hocVienId = v.hocVienId
-    WHERE hv.userId = p_userId
-    ORDER BY v.kyThiId DESC;
-END;
-/
-CREATE OR REPLACE PROCEDURE DANGKY_KYTHI_USER(
-    p_userId NUMBER,
-    p_kyThiId NUMBER
-)
-IS
-    v_hocVienId NUMBER;
-    v_hoTen NVARCHAR2(100);
-    v_hoSoId NUMBER;
-    v_maHang NVARCHAR2(20);
-    v_hocPhi NUMBER;
 
-    v_duDKTot NUMBER;
-    v_duDKSat NUMBER;
-    v_dauTN NUMBER;
-    v_full NUMBER;
-
-    v_kyThiTot NUMBER;
-    v_kyThiSat NUMBER;
-
-    v_tenTot NVARCHAR2(255);
-    v_tenSat NVARCHAR2(255);
-
-    v_phi NUMBER;
-
-    v_phieuId NUMBER;
-BEGIN
-    -- Lấy học viên
-    SELECT hocVienId, hoTen INTO v_hocVienId, v_hoTen
-    FROM HocVien WHERE userId = p_userId;
-
-    -- Lấy thông tin kỳ thi
-    SELECT 
-        REGEXP_SUBSTR(tenKyThi,'\(([^)]+)\)$',1,1,NULL,1)
-    INTO v_maHang
-    FROM KyThi WHERE kyThiId = p_kyThiId;
-
-    -- Lấy hồ sơ + học phí
-    SELECT hs.hoSoId, hg.hocPhi
-    INTO v_hoSoId, v_hocPhi
-    FROM HoSoThiSinh hs
-    JOIN HangGplx hg ON hg.hangId = hs.hangId
-    WHERE hs.hocVienId = v_hocVienId
-      AND hg.maHang = v_maHang
-      AND ROWNUM = 1;
-
-    -- Lấy kết quả học tập
-    SELECT 
-        NVL(DU_DK_THITOTNGHIEP,0),
-        NVL(DU_DK_THISATHACH,0),
-        NVL(DAUTOTNGHIEP,0)
-    INTO v_duDKTot, v_duDKSat, v_dauTN
-    FROM KetQuaHocTap
-    WHERE hoSoId = v_hoSoId;
-
-    -- Check full pass
-    SELECT CASE 
-        WHEN NVL(lyThuyetKq,0)=1 AND NVL(saHinhKq,0)=1 
-         AND NVL(duongTruongKq,0)=1 AND NVL(moPhongKq,0)=1
-        THEN 1 ELSE 0 END
-    INTO v_full
-    FROM ChiTietKetQuaHocTap
-    WHERE ketQuaHocTapId = (
-        SELECT ketQuaHocTapId FROM KetQuaHocTap WHERE hoSoId = v_hoSoId
-    );
-
-    -- Nếu đã hoàn thành → chặn
-    IF v_full = 1 THEN
-        RAISE_APPLICATION_ERROR(-20020, 'Da hoan thanh ky thi');
-    END IF;
-
-    -- Nếu chưa đủ điều kiện tốt nghiệp → chặn
-    IF v_duDKTot = 0 THEN
-        RAISE_APPLICATION_ERROR(-20021, 'Chua du dieu kien thi tot nghiep');
-    END IF;
-
-    -- Tìm 2 kỳ thi
-    SELECT kyThiId, tenKyThi INTO v_kyThiTot, v_tenTot
-    FROM KyThi
-    WHERE REGEXP_SUBSTR(tenKyThi,'\(([^)]+)\)$',1,1,NULL,1)=v_maHang
-      AND loaiKyThi = N'Tốt nghiệp'
-      AND ROWNUM=1;
-
-    SELECT kyThiId, tenKyThi INTO v_kyThiSat, v_tenSat
-    FROM KyThi
-    WHERE REGEXP_SUBSTR(tenKyThi,'\(([^)]+)\)$',1,1,NULL,1)=v_maHang
-      AND loaiKyThi = N'Sát hạch'
-      AND ROWNUM=1;
-
-    v_phi := v_hocPhi / 3;
-
-    -- CASE 1: đủ sát hạch → chỉ đăng ký 1
-    IF v_duDKSat = 1 THEN
-
-        INSERT INTO ChiTietDangKyThi
-        VALUES (v_kyThiSat, v_hoSoId, SYSTIMESTAMP, NULL);
-
-        INSERT INTO PhieuThanhToan(tenPhieu, ngayLap, tongTien)
-        VALUES (v_tenSat || ' _ ' || v_hoTen, SYSTIMESTAMP, v_phi)
-        RETURNING phieuId INTO v_phieuId;
-
-        INSERT INTO ChiTietPhieuThanhToan
-        VALUES (v_hoSoId, v_phieuId, N'Lệ phí thi', NULL, NULL);
-
-    ELSE
-    -- CASE 2: chỉ đủ tốt nghiệp → đăng ký cả 2
-
-        INSERT INTO ChiTietDangKyThi
-        VALUES (v_kyThiTot, v_hoSoId, SYSTIMESTAMP, NULL);
-
-        INSERT INTO ChiTietDangKyThi
-        VALUES (v_kyThiSat, v_hoSoId, SYSTIMESTAMP, NULL);
-
-        INSERT INTO PhieuThanhToan(tenPhieu, ngayLap, tongTien)
-        VALUES (v_tenTot || ' _ ' || v_hoTen, SYSTIMESTAMP, v_phi)
-        RETURNING phieuId INTO v_phieuId;
-
-        INSERT INTO ChiTietPhieuThanhToan
-        VALUES (v_hoSoId, v_phieuId, N'Lệ phí thi', NULL, NULL);
-
-        INSERT INTO PhieuThanhToan(tenPhieu, ngayLap, tongTien)
-        VALUES (v_tenSat || ' _ ' || v_hoTen, SYSTIMESTAMP, v_phi)
-        RETURNING phieuId INTO v_phieuId;
-
-        INSERT INTO ChiTietPhieuThanhToan
-        VALUES (v_hoSoId, v_phieuId, N'Lệ phí thi', NULL, NULL);
-
-    END IF;
-
-END;
-/
 
 
 
