@@ -4087,14 +4087,18 @@ BEGIN
             kh.ngayKetThuc,
             kh.diaDiem,
             kh.trangThai AS trangThaiKhoaHocGoc,
+
             hg.hangId,
             hg.tenHang,
             hg.loaiPhuongTien,
             hg.hocPhi,
+
             hs.hoSoId,
             hs.tenHoSo,
+
             hv.hocVienId,
             hv.hoTen AS hoTenHocVien,
+
             pt.phieuId,
             pt.tenPhieu,
             pt.ngayLap,
@@ -4103,41 +4107,65 @@ BEGIN
             NVL(pt.phuongThuc, N'') AS phuongThuc,
             NVL(ct.loaiPhi, N'') AS loaiPhi,
             NVL(ct.ghiChu, N'') AS ghiChu,
+
             kq.ketQuaHocTapId,
+            kq.soBuoiHoc,
+            kq.soBuoiToiThieu,
+            kq.kmToiThieu,
+            NVL(kq.soKmHoanThanh, 0) AS soKmHoanThanh,
+            NVL(kq.DU_DK_THITOTNGHIEP, 0) AS DU_DK_THITOTNGHIEP,
+            NVL(kq.DAUTOTNGHIEP, 0) AS DAUTOTNGHIEP,
+            NVL(kq.DU_DK_THISATHACH, 0) AS DU_DK_THISATHACH,
+            kq.THOIGIANCAPNHAT,
+
             ct_kq.lyThuyetKq,
             ct_kq.saHinhKq,
             ct_kq.duongTruongKq,
             ct_kq.moPhongKq,
+
             CASE
-                WHEN NVL(ct_kq.lyThuyetKq, 0) = 1
+                WHEN NVL(kq.DAUTOTNGHIEP, 0) = 1
+                 AND NVL(kq.DU_DK_THISATHACH, 0) = 1
+                 AND NVL(ct_kq.lyThuyetKq, 0) = 1
                  AND NVL(ct_kq.saHinhKq, 0) = 1
                  AND NVL(ct_kq.duongTruongKq, 0) = 1
                  AND NVL(ct_kq.moPhongKq, 0) = 1
-                THEN N'Hoàn thành'
+                THEN N'Chờ cấp bằng'
+
+                WHEN NVL(kq.DAUTOTNGHIEP, 0) = 1
+                 AND NVL(kq.DU_DK_THISATHACH, 0) = 1
+                THEN N'Đang thi sát hạch'
+
+                WHEN NVL(kq.DU_DK_THITOTNGHIEP, 0) = 1
+                THEN N'Đang thi tốt nghiệp'
+
                 WHEN TRUNC(SYSDATE) BETWEEN TRUNC(kh.ngayBatDau) AND TRUNC(kh.ngayKetThuc)
                 THEN N'Đang học'
+
                 WHEN TRUNC(SYSDATE) > TRUNC(kh.ngayKetThuc)
-                     AND NOT (
-                        NVL(ct_kq.lyThuyetKq, 0) = 1
-                        AND NVL(ct_kq.saHinhKq, 0) = 1
-                        AND NVL(ct_kq.duongTruongKq, 0) = 1
-                        AND NVL(ct_kq.moPhongKq, 0) = 1
-                     )
+                     AND NVL(kq.DU_DK_THITOTNGHIEP, 0) = 0
                 THEN N'Không hoàn thành'
+
                 ELSE N'Chưa bắt đầu'
             END AS trangThaiHocTap,
+
             CASE
-                WHEN NVL(ct_kq.lyThuyetKq, 0) = 1
+                WHEN NVL(kq.DAUTOTNGHIEP, 0) = 1
+                 AND NVL(kq.DU_DK_THISATHACH, 0) = 1
+                 AND NVL(ct_kq.lyThuyetKq, 0) = 1
                  AND NVL(ct_kq.saHinhKq, 0) = 1
                  AND NVL(ct_kq.duongTruongKq, 0) = 1
                  AND NVL(ct_kq.moPhongKq, 0) = 1
                 THEN 1
                 ELSE 0
             END AS daHoanThanh,
+
             CASE
                 WHEN TRUNC(SYSDATE) BETWEEN TRUNC(kh.ngayBatDau) AND TRUNC(kh.ngayKetThuc)
                      AND NOT (
-                        NVL(ct_kq.lyThuyetKq, 0) = 1
+                        NVL(kq.DAUTOTNGHIEP, 0) = 1
+                        AND NVL(kq.DU_DK_THISATHACH, 0) = 1
+                        AND NVL(ct_kq.lyThuyetKq, 0) = 1
                         AND NVL(ct_kq.saHinhKq, 0) = 1
                         AND NVL(ct_kq.duongTruongKq, 0) = 1
                         AND NVL(ct_kq.moPhongKq, 0) = 1
@@ -4145,14 +4173,10 @@ BEGIN
                 THEN 1
                 ELSE 0
             END AS dangHoc,
+
             CASE
                 WHEN TRUNC(SYSDATE) > TRUNC(kh.ngayKetThuc)
-                     AND NOT (
-                        NVL(ct_kq.lyThuyetKq, 0) = 1
-                        AND NVL(ct_kq.saHinhKq, 0) = 1
-                        AND NVL(ct_kq.duongTruongKq, 0) = 1
-                        AND NVL(ct_kq.moPhongKq, 0) = 1
-                     )
+                     AND NVL(kq.DU_DK_THITOTNGHIEP, 0) = 0
                 THEN 1
                 ELSE 0
             END AS khongHoanThanh
@@ -4176,7 +4200,6 @@ BEGIN
         ORDER BY kh.ngayBatDau DESC, pt.phieuId DESC;
 END;
 /
-
 CREATE OR REPLACE PROCEDURE SP_MY_COURSE_DETAIL
 (
     p_userId    IN NUMBER,
@@ -4196,6 +4219,7 @@ BEGIN
                 kh.ngayKetThuc,
                 kh.diaDiem,
                 kh.trangThai AS trangThaiKhoaHocGoc,
+
                 hg.hangId,
                 hg.tenHang,
                 hg.moTa,
@@ -4232,7 +4256,8 @@ BEGIN
                 kq.ketQuaHocTapId,
                 NVL(kq.nhanXet, N'') AS nhanXet,
                 kq.soBuoiHoc,
-                kq.KmToiThieu,
+                kq.soBuoiToiThieu,
+                kq.kmToiThieu,
                 NVL(kq.soKmHoanThanh, 0) AS soKmHoanThanh,
                 NVL(kq.DU_DK_THITOTNGHIEP, 0) AS DU_DK_THITOTNGHIEP,
                 NVL(kq.DAUTOTNGHIEP, 0) AS DAUTOTNGHIEP,
@@ -4245,21 +4270,28 @@ BEGIN
                 ct_kq.moPhongKq,
 
                 CASE
-                    WHEN NVL(ct_kq.lyThuyetKq, 0) = 1
+                    WHEN NVL(kq.DAUTOTNGHIEP, 0) = 1
+                     AND NVL(kq.DU_DK_THISATHACH, 0) = 1
+                     AND NVL(ct_kq.lyThuyetKq, 0) = 1
                      AND NVL(ct_kq.saHinhKq, 0) = 1
                      AND NVL(ct_kq.duongTruongKq, 0) = 1
                      AND NVL(ct_kq.moPhongKq, 0) = 1
-                    THEN N'Hoàn thành'
+                    THEN N'Chờ cấp bằng'
+
+                    WHEN NVL(kq.DAUTOTNGHIEP, 0) = 1
+                     AND NVL(kq.DU_DK_THISATHACH, 0) = 1
+                    THEN N'Đang thi sát hạch'
+
+                    WHEN NVL(kq.DU_DK_THITOTNGHIEP, 0) = 1
+                    THEN N'Đang thi tốt nghiệp'
+
                     WHEN TRUNC(SYSDATE) BETWEEN TRUNC(kh.ngayBatDau) AND TRUNC(kh.ngayKetThuc)
                     THEN N'Đang học'
+
                     WHEN TRUNC(SYSDATE) > TRUNC(kh.ngayKetThuc)
-                         AND NOT (
-                            NVL(ct_kq.lyThuyetKq, 0) = 1
-                            AND NVL(ct_kq.saHinhKq, 0) = 1
-                            AND NVL(ct_kq.duongTruongKq, 0) = 1
-                            AND NVL(ct_kq.moPhongKq, 0) = 1
-                         )
+                         AND NVL(kq.DU_DK_THITOTNGHIEP, 0) = 0
                     THEN N'Không hoàn thành'
+
                     ELSE N'Chưa bắt đầu'
                 END AS trangThaiHocTap,
 
