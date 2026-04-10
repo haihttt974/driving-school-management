@@ -36,6 +36,7 @@ builder.Services.AddScoped<PaymentInvoiceService>();
 builder.Services.AddScoped<HoSoService>();
 builder.Services.AddScoped<IPhotoValidationService, PhotoValidationService>();
 builder.Services.AddScoped<AiChatService>();
+builder.Services.AddScoped<ReportOracleService>();
 //
 builder.Services.AddHttpClient();
 //
