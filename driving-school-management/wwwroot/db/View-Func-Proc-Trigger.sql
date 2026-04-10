@@ -6703,6 +6703,114 @@ CREATE OR REPLACE PACKAGE BODY PKG_KETQUAHOCTAP_ADMIN AS
 END PKG_KETQUAHOCTAP_ADMIN;
 /
 
+CREATE OR REPLACE PACKAGE PKG_PAYMENT_HISTORY AS
+    PROCEDURE GET_ALL_PAYMENT_HISTORY(
+        p_userId IN NUMBER,
+        p_cursor OUT SYS_REFCURSOR
+    );
+END PKG_PAYMENT_HISTORY;
+/
+
+CREATE OR REPLACE PACKAGE BODY PKG_PAYMENT_HISTORY AS
+
+    PROCEDURE GET_ALL_PAYMENT_HISTORY(
+        p_userId IN NUMBER,
+        p_cursor OUT SYS_REFCURSOR
+    )
+    IS
+    BEGIN
+        OPEN p_cursor FOR
+
+        SELECT
+            pt.phieuId AS phieuId,
+            pt.tenPhieu AS tenPhieu,
+            pt.ngayLap AS ngayLap,
+            pt.ngayNop AS ngayNop,
+            pt.tongTien AS tongTien,
+            NVL(pt.phuongThuc, N'') AS phuongThuc,
+            ct.loaiPhi AS loaiPhi,
+            NVL(ct.ghiChu, N'') AS ghiChu,
+            hs.hoSoId AS hoSoId,
+            hs.tenHoSo AS tenHoSo,
+            hv.hoTen AS hoTenHocVien,
+            kh.khoaHocId AS khoaHocId,
+            kh.tenKhoaHoc AS tenKhoaHoc,
+            hg.tenHang AS tenHang,
+            CAST(NULL AS NUMBER) AS kyThiId,
+            CAST(NULL AS NVARCHAR2(100)) AS tenKyThi,
+            CASE
+                WHEN pt.ngayNop IS NOT NULL THEN N'Đã thanh toán'
+                ELSE N'Chưa thanh toán'
+            END AS trangThaiThanhToan,
+            CASE
+                WHEN pt.ngayNop IS NOT NULL THEN 1
+                ELSE 0
+            END AS coTheTaiHoaDon
+        FROM PhieuThanhToan pt
+        JOIN ChiTietPhieuThanhToan ct
+            ON ct.phieuId = pt.phieuId
+        JOIN HoSoThiSinh hs
+            ON hs.hoSoId = ct.hoSoId
+        JOIN HocVien hv
+            ON hv.hocVienId = hs.hocVienId
+        JOIN KetQuaHocTap kq
+            ON kq.ketQuaHocTapId = ct.ketQuaHocTapId
+        JOIN ChiTietKetQuaHocTap ct_kq
+            ON ct_kq.ketQuaHocTapId = kq.ketQuaHocTapId
+        JOIN KhoaHoc kh
+            ON kh.khoaHocId = ct_kq.khoaHocId
+        JOIN HangGplx hg
+            ON hg.hangId = kh.hangId
+        WHERE hv.userId = p_userId
+          AND ct.loaiPhi = N'Khóa học'
+
+        UNION ALL
+
+        SELECT
+            pt.phieuId AS phieuId,
+            pt.tenPhieu AS tenPhieu,
+            pt.ngayLap AS ngayLap,
+            pt.ngayNop AS ngayNop,
+            pt.tongTien AS tongTien,
+            NVL(pt.phuongThuc, N'') AS phuongThuc,
+            ct.loaiPhi AS loaiPhi,
+            NVL(ct.ghiChu, N'') AS ghiChu,
+            hs.hoSoId AS hoSoId,
+            hs.tenHoSo AS tenHoSo,
+            hv.hoTen AS hoTenHocVien,
+            CAST(NULL AS NUMBER) AS khoaHocId,
+            CAST(NULL AS NVARCHAR2(200)) AS tenKhoaHoc,
+            hg.tenHang AS tenHang,
+            kt.kyThiId AS kyThiId,
+            kt.tenKyThi AS tenKyThi,
+            CASE
+                WHEN pt.ngayNop IS NOT NULL THEN N'Đã thanh toán'
+                ELSE N'Chưa thanh toán'
+            END AS trangThaiThanhToan,
+            CASE
+                WHEN pt.ngayNop IS NOT NULL THEN 1
+                ELSE 0
+            END AS coTheTaiHoaDon
+        FROM PhieuThanhToan pt
+        JOIN ChiTietPhieuThanhToan ct
+            ON ct.phieuId = pt.phieuId
+        JOIN HoSoThiSinh hs
+            ON hs.hoSoId = ct.hoSoId
+        JOIN HocVien hv
+            ON hv.hocVienId = hs.hocVienId
+        JOIN HangGplx hg
+            ON hg.hangId = hs.hangId
+        LEFT JOIN KyThi kt
+            ON kt.tenKyThi = PKG_EXAM_PAYMENT.GET_TEN_KYTHI_FROM_PHIEU(pt.tenPhieu)
+        WHERE hv.userId = p_userId
+          AND ct.loaiPhi = N'Kỳ thi'
+
+        ORDER BY phieuId DESC;
+
+    END GET_ALL_PAYMENT_HISTORY;
+
+END PKG_PAYMENT_HISTORY;
+/
 
 
 

@@ -889,7 +889,7 @@
                             </a>
                         </li>
 
-                        <li class="nav-item has-treeview theory-tree @(currentController == "AdminTheoryQuestions" || currentController == "AdminExamSets" || currentController == "AdminResults" ? "menu-open" : "")">
+                        @* <li class="nav-item has-treeview theory-tree @(currentController == "AdminTheoryQuestions" || currentController == "AdminExamSets" || currentController == "AdminResults" ? "menu-open" : "")">
                             <a href="#"
                                    class="nav-link @(currentController == "AdminTheoryQuestions" || currentController == "AdminExamSets" || currentController == "AdminResults" ? "active" : "")">
                                 <i class="nav-icon fa fa-file-circle-question"></i>
@@ -924,7 +924,7 @@
                                     </a>
                                 </li>
                             </ul>
-                        </li>
+                        </li> *@
 
                         <li class="nav-item">
                             <a asp-controller="AdminProfiles" asp-action="Index"

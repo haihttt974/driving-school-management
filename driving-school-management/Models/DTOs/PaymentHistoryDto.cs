@@ -21,5 +21,7 @@
 
         public string TrangThaiThanhToan { get; set; } = string.Empty;
         public int CoTheTaiHoaDon { get; set; }
+        public int KyThiId { get; set; }
+        public string TenKyThi { get; set; } = string.Empty;
     }
 }
