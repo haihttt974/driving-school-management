@@ -208,8 +208,6 @@ This project reads configuration from `appsettings.json` and environment variabl
 
 ## 🖼️ Screenshots
 
-## 🖼️ Screenshots
-
 <p align="center">
   <sub>Selected product views from the Driving School Management System</sub>
 </p>
