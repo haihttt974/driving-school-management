@@ -2,7 +2,7 @@
 
 A modern ASP.NET Core MVC platform for managing driving-school operations: student onboarding, learning modules, exam scheduling, simulation tests, and online payments.
 
-![demo](./assets/demo.png)
+![demo](./driving-school-management/wwwroot/assets/demo.png)
 
 ---
 
@@ -217,14 +217,14 @@ This project reads configuration from `appsettings.json` and environment variabl
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-1.png" alt="Admin Dashboard" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-1.png" alt="Admin Dashboard" width="100%" />
       <br/><br/>
       <b>Admin Dashboard</b>
       <br/>
       <sub>System overview with KPIs, charts, and operational summary.</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-2.png" alt="Course Management" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-2.png" alt="Course Management" width="100%" />
       <br/><br/>
       <b>Course Management</b>
       <br/>
@@ -233,14 +233,14 @@ This project reads configuration from `appsettings.json` and environment variabl
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-3.png" alt="Student Profiles" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-3.png" alt="Student Profiles" width="100%" />
       <br/><br/>
       <b>Student Profiles</b>
       <br/>
       <sub>Track dossier information, registration date, and approval status.</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-4.png" alt="Reports and Analytics" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-4.png" alt="Reports and Analytics" width="100%" />
       <br/><br/>
       <b>Reports & Analytics</b>
       <br/>
@@ -249,14 +249,14 @@ This project reads configuration from `appsettings.json` and environment variabl
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-5.png" alt="Learning and Simulation" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-5.png" alt="Learning and Simulation" width="100%" />
       <br/><br/>
       <b>Learning & Simulation</b>
       <br/>
       <sub>Theory practice, mock exams, and simulation training modules.</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-6.png" alt="Payment History" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-6.png" alt="Payment History" width="100%" />
       <br/><br/>
       <b>Payment History</b>
       <br/>
@@ -265,14 +265,14 @@ This project reads configuration from `appsettings.json` and environment variabl
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-7.png" alt="Invoice PDF" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-7.png" alt="Invoice PDF" width="100%" />
       <br/><br/>
       <b>Invoice PDF</b>
       <br/>
       <sub>Automatically generated invoice document for completed payments.</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./assets/screenshot-8.png" alt="AI Chatbot" width="100%" />
+      <img src="./driving-school-management/wwwroot/assets/screenshot-8.png" alt="AI Chatbot" width="100%" />
       <br/><br/>
       <b>AI Chatbot</b>
       <br/>
