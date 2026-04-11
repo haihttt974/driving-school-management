@@ -360,6 +360,6 @@ This project is licensed under the **MIT License**.
 
 For technical discussions or collaboration:
 
-- Repository owner/maintainer: [haihttt974](https://github.com/haihttt974)
-- Email: `leduyhai090704@gmail.com`
+- Repository owner/maintainer: [haihttt974](https://github.com/haihttt974) & [ngoctrinh564](https://github.com/ngoctrinh564)
+- Email: `leduyhai090704@gmail.com` & `nguyenngoctrinhbt3@gmail.com`
 - Issues: open a ticket in this repository
